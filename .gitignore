@@ -1,0 +1,9 @@
+# Logs & temporaries
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Output screenshots
+*.png
+*.jpg
