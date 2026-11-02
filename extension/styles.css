@@ -1,0 +1,160 @@
+/* ZeroLagDroid Extension Styles */
+
+#zerolag-floating-root {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999999;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+}
+
+#zerolag-toggle-btn {
+  background: linear-gradient(135deg, #00e676 0%, #00b0ff 100%);
+  color: #0d1117;
+  padding: 12px 18px;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 230, 118, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 15px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  user-select: none;
+}
+
+#zerolag-toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 230, 118, 0.6);
+}
+
+#zerolag-panel {
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  width: 360px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+#zerolag-panel.zld-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.95);
+  display: none;
+}
+
+.zld-header {
+  background: #0d1117;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #30363d;
+}
+
+.zld-title span {
+  font-weight: 800;
+  font-size: 16px;
+  color: #00e676;
+  display: block;
+}
+
+.zld-title small {
+  font-size: 11px;
+  color: #8b949e;
+}
+
+#zld-close-btn {
+  background: none;
+  border: none;
+  color: #8b949e;
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+#zld-close-btn:hover {
+  color: #fff;
+}
+
+.zld-price-badge {
+  background: #21262d;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #c9d1d9;
+  border-bottom: 1px solid #30363d;
+}
+
+.zld-price-badge b {
+  color: #ffeb3b;
+}
+
+.zld-buttons-container {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 440px;
+  overflow-y: auto;
+}
+
+.zld-btn {
+  background: #21262d;
+  border: 1px solid #30363d;
+  color: #f0f6fc;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.zld-btn:hover {
+  background: #30363d;
+  border-color: #00e676;
+}
+
+.zld-row {
+  display: flex;
+  gap: 8px;
+}
+
+.zld-btn.half {
+  flex: 1;
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+.zld-btn.pix-btn {
+  background: rgba(0, 230, 118, 0.1);
+  border-color: rgba(0, 230, 118, 0.4);
+  color: #00e676;
+}
+
+.zld-btn.pix-btn:hover {
+  background: rgba(0, 230, 118, 0.2);
+}
+
+.zld-footer {
+  padding: 10px;
+  text-align: center;
+  background: #0d1117;
+  border-top: 1px solid #30363d;
+  font-size: 11px;
+  color: #8b949e;
+}
