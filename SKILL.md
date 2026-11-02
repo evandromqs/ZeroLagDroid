@@ -1,9 +1,9 @@
 ---
-name: android-performance-optimizer
-description: Automated auditing, deep debloating, memory tuning, kernel swap optimization, and AOT native compilation for Android smartphones (Samsung Galaxy One UI, Xiaomi MIUI/HyperOS, Motorola, AOSP). Specializes in high-performance tuning for ride-hailing/delivery drivers (Uber, 99, iFood), gaming, and revitalizing low/mid-range Android hardware.
+name: ZeroLagDroid
+description: Automated auditing, deep debloating, memory tuning, kernel swap optimization, and AOT native compilation for Android smartphones (Samsung Galaxy One UI, Xiaomi HyperOS, Motorola, AOSP). Specializes in high-performance tuning for ride-hailing/delivery drivers (Uber, 99, iFood), gaming, and revitalizing low/mid-range Android hardware without root.
 ---
 
-# Android Performance Optimizer Skill
+# ZeroLagDroid - Android Performance Optimizer Skill
 
 Comprehensive guide, command templates, debloating catalog, and tuning procedures for optimizing Android smartphones via **ADB (Android Debug Bridge)**.
 
