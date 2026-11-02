@@ -1,81 +1,75 @@
 /**
  * ZeroLagDroid - WhatsApp Web Fast Response Extension
  * Barra lateral retrátil acoplada ao canto direito, comprimindo o WhatsApp.
+ * Versão 1.1: Textos humanizados + quebra de linha corrigida (Shift+Enter/LineBreak).
  */
 
 (function () {
   'use strict';
 
-  const SIDEBAR_WIDTH = 360; // Largura da barra lateral em pixels
-
-  // Modelos de mensagens configuráveis
+  // Modelos de mensagens humanizadas (sem tom de robô)
   const defaultTemplates = {
     pixKey: "seu-pix-aqui",
     userName: "Evandro",
     neighborhood: "Zona Leste (SP)",
-    msg1: `Fala parceiro, beleza? 👊
-Seja bem-vindo! 
+    
+    msg1: `Opa mano, tudo bem? Vi sua mensagem aqui! 👊
 
-Me conta duas coisas rápidas sobre o seu aparelho:
-1. Qual é o modelo do seu celular? (Ex: Galaxy A10, A20, A32, Moto G, etc.)
-2. Quais aplicativos você mais usa nele? (Uber, 99 ou iFood?)`,
+Qual é o modelo do seu celular e quais aplicativos você mais roda nele no dia a dia? Uber, 99 ou iFood?`,
 
-    msg2: `Show de bola! Esse modelo sofre bastante com a memória virtual lenta de fábrica e processos de fundo que esquentam o aparelho.
+    msg2: `Pô, esse aparelho é bom, o problema é que com as atualizações o sistema da marca vai acumulando muita coisa inútil em segundo plano e fica engasgando na hora que toca a corrida.
 
-O que nós fazemos nele:
-✅ Não formata nada: não apaga fotos, conversas nem senhas.
-✅ Sem root: 100% seguro pelo sistema original.
-✅ Otimização Extrema: Desativamos o que pesa, liberamos até 2 GB de RAM e blindamos o app da Uber/99/iFood para nunca fechar no meio da corrida.
+Eu faço um serviço pelo computador que tira todo esse peso, libera bastante memória RAM e blinda os apps da Uber e 99 pra não fecharem mais sozinhos.
 
-💰 Valores:
-📍 Presencial (Somente Zona Leste - SP): R$ 50,00
-💻 Remoto / Online (se você tiver computador): R$ 30,00
+Não precisa formatar nada, não perde fotos, nem conversas, nem nada.
 
-🛡️ Garantia Total: Você só me paga depois que ver o celular respondendo liso e aprovar!`,
+Os valores são bem tranquilos:
+• Presencial aqui na Zona Leste: R$ 50 (a gente marca num posto ou shopping de boa)
+• Online / Remoto: R$ 30 (se você tiver um computador com internet em casa)
 
-    msg3_presencial: `📍 Atendimento Presencial (Zona Leste - SP - R$ 50,00):
-Podemos combinar em um ponto de apoio, posto de combustível ou shopping da Zona Leste que fique bom para nós dois. 
+E o melhor: você só me paga depois que ver o celular respondendo na hora!`,
 
-Leva apenas 5 minutinhos no cabo USB direto no meu notebook!
+    msg3_presencial: `Sobre o presencial: eu atendo aqui na Zona Leste de SP.
 
-Qual bairro da Zona Leste fica mais fácil para você?`,
+A gente pode marcar num posto de gasolina, shopping ou ponto de apoio que fique fácil pra nós dois. Eu levo o notebook e em 5 minutinhos já te entrego ele pronto pra rodar.
 
-    msg3_online: `💻 Atendimento Online / Remoto (R$ 30,00):
-Se você tiver um computador ou notebook com internet aí, você só precisa conectar o celular no cabo USB no seu PC.
+Qual bairro aqui da ZL fica melhor pra você?`,
 
-Eu conecto com você pelo AnyDesk (ou TeamViewer) e faço todo o procedimento daqui em 5 minutinhos na sua tela.
+    msg3_online: `Pro atendimento online de R$ 30, é bem simples:
 
-Você tem computador aí agora?`,
+Você só precisa ter um computador ou notebook com internet aí. A gente conecta o celular no cabo USB do PC e eu faço tudo daqui rapidinho pelo AnyDesk enquanto você acompanha na tela.
 
-    msg4_usb: `Para o computador reconhecer o celular, precisamos ativar uma opção simples:
-1. Vá em Configurações > Sobre o telefone > Informações do software.
-2. Toque 7 vezes seguidas em cima de "Número de compilação" (vai avisar que o modo desenvolvedor foi ativado).
-3. Volte nas Configurações, desça até o fim e abra "Opções do desenvolvedor".
-4. Ative a caixinha "Depuração USB".
+Você tem PC ou notebook aí agora?`,
 
-Agora conecte o cabo no computador. Na tela do celular vai aparecer: "Permitir depuração USB?". Marque "Sempre permitir" e clique em Permitir.`,
+    msg4_usb: `Pra gente conectar no computador, só faz esse passo a passo rápido no seu celular:
 
-    msg5_teste: `Prontinho parceiro! Aparelho 100% otimizado e reiniciado! 🚀
+1. Entra nas Configurações do celular e vai em "Sobre o telefone"
+2. Clica em "Informações do software"
+3. Clica 7 vezes seguidas em cima de "Número de compilação" (vai avisar que ativou o modo desenvolvedor)
+4. Agora volta nas Configurações, desce tudo e entra em "Opções do desenvolvedor"
+5. Ativa a chave "Depuração USB"
 
-Faz o teste aí agora:
-1. Desbloqueie o celular e sinta a velocidade nas animações e toques.
-2. Abra a Uber / 99 / iFood e o Google Maps.
+Aí é só plugar no cabo do computador. Na tela do celular vai aparecer uma caixinha perguntando se permite a depuração USB. Marca a caixinha "Sempre permitir" e clica em Permitir.`,
 
-Sentiu a diferença na resposta imediata?`,
+    msg5_teste: `Prontinho meu parceiro! Aparelho tá 100% pronto e reiniciado! 🚀
 
-    msg6_pix: `Top demais! Fico feliz que tenha aprovado o resultado, agora é rodar com o celular voando! 👊
+Dá uma mexida nele aí agora pra você sentir a diferença. Abre a Uber, a 99 e o Maps.
 
-Segue os dados para o Pix:
-🔑 Chave Pix: {PIX_KEY}
-👤 Nome: {USER_NAME}
-💰 Valor: {VALOR}
+Ficou mais leve e rápido no toque?`,
 
-🤝 Se você tiver algum parceiro de rodagem ou grupo de WhatsApp que esteja sofrendo com celular travando, compartilha meu contato com eles! Fortalece muito o trampo! Valeu!`
+    msg6_pix: `Show de bola mano, fico feliz demais que tenha gostado! Agora é só acelerar e faturar sem dor de cabeça de app travando! 👊
+
+Seguem os dados do Pix:
+Chave Pix: {PIX_KEY}
+Nome: {USER_NAME}
+Valor: {VALOR}
+
+Se puder indicar pros parceiros da rodagem ou mandar no grupo de motoristas aí, me ajuda muito! Tamo junto!`
   };
 
   let templates = { ...defaultTemplates };
 
-  // Carregar dados salvos
+  // Carregar dados salvos no storage do Chrome
   if (chrome.storage && chrome.storage.sync) {
     chrome.storage.sync.get(['pixKey', 'userName', 'neighborhood'], (res) => {
       if (res.pixKey) templates.pixKey = res.pixKey;
@@ -84,7 +78,7 @@ Segue os dados para o Pix:
     });
   }
 
-  // Inserir texto no input do WhatsApp Web
+  // Função para injetar texto mantendo as quebras de linha reais no WhatsApp Web
   function insertIntoWhatsAppInput(text) {
     const inputSelectors = [
       'footer div[contenteditable="true"]',
@@ -109,12 +103,41 @@ Segue os dados para o Pix:
 
     inputField.focus();
 
-    const success = document.execCommand('insertText', false, text);
-    if (!success) {
-      inputField.textContent = text;
-      inputField.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    // 1. Tentar simular evento de Paste com DataTransfer (o método mais limpo do WhatsApp)
+    try {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.setData('text/plain', text);
+      const pasteEvent = new ClipboardEvent('paste', {
+        clipboardData: dataTransfer,
+        bubbles: true,
+        cancelable: true
+      });
+      inputField.dispatchEvent(pasteEvent);
+      
+      // Se inseriu com sucesso, finaliza
+      if (inputField.textContent && inputField.textContent.length > 5) {
+        inputField.dispatchEvent(new Event('input', { bubbles: true }));
+        return;
+      }
+    } catch (e) {
+      console.warn("Clipboard paste falhou, usando método por linhas:", e);
     }
 
+    // 2. Método Infalível: Inserir linha por linha com insertLineBreak (Shift+Enter nativo do editor)
+    const lines = text.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.length > 0) {
+        document.execCommand('insertText', false, line);
+      }
+      if (i < lines.length - 1) {
+        // Insere quebra de linha sem disparar o envio da mensagem
+        document.execCommand('insertLineBreak');
+      }
+    }
+
+    // Forçar notificação de input para o React do WhatsApp
+    inputField.dispatchEvent(new Event('input', { bubbles: true }));
     inputField.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
@@ -137,7 +160,7 @@ Segue os dados para o Pix:
         <div class="zld-sidebar-header">
           <div class="zld-brand">
             <span class="brand-title">🚀 ZeroLagDroid</span>
-            <span class="brand-sub">Painel de Atendimento</span>
+            <span class="brand-sub">Atendimento Rápido</span>
           </div>
           <button id="zld-collapse-btn" title="Recolher Barra Lateral">&times;</button>
         </div>
@@ -148,13 +171,13 @@ Segue os dados para o Pix:
             <b>R$ 50</b>
           </div>
           <div class="price-chip online">
-            <span>💻 Remoto / Online</span>
+            <span>💻 Remoto (PC)</span>
             <b>R$ 30</b>
           </div>
         </div>
 
         <div class="zld-content-scroll">
-          <div class="zld-section-title">Etapas do Atendimento</div>
+          <div class="zld-section-title">Conversa & Negociação</div>
 
           <button class="zld-script-btn" data-action="msg1">
             <div class="btn-top">
@@ -176,7 +199,7 @@ Segue os dados para o Pix:
             <button class="zld-script-btn" data-action="msg3_presencial">
               <div class="btn-top">
                 <span class="step-num">3A</span>
-                <span class="step-label">Presencial (ZL)</span>
+                <span class="step-label">Presencial ZL</span>
               </div>
               <div class="btn-preview">Combina posto/ponto ZL</div>
             </button>
@@ -186,7 +209,7 @@ Segue os dados para o Pix:
                 <span class="step-num">3B</span>
                 <span class="step-label">Remoto (PC)</span>
               </div>
-              <div class="btn-preview">Explica AnyDesk/cabo</div>
+              <div class="btn-preview">AnyDesk / cabo USB</div>
             </button>
           </div>
 
@@ -226,7 +249,7 @@ Segue os dados para o Pix:
         </div>
 
         <div class="zld-sidebar-footer">
-          <small>Clique em qualquer etapa para preencher na conversa.</small>
+          <small>Clique em qualquer etapa para preencher com quebra de linha.</small>
         </div>
       </aside>
     `;
@@ -251,7 +274,6 @@ Segue os dados para o Pix:
         handleBtn.title = "Expandir Painel ZeroLag";
       }
 
-      // Lembrar preferência no storage
       if (chrome.storage && chrome.storage.local) {
         chrome.storage.local.set({ zld_sidebar_open: isOpen });
       }
@@ -317,7 +339,7 @@ Segue os dados para o Pix:
     });
   }
 
-  // Iniciar assim que o WhatsApp Web estiver pronto
+  // Iniciar assim que o WhatsApp Web estiver carregado
   const interval = setInterval(() => {
     if (document.querySelector('#app') || document.querySelector('#main')) {
       clearInterval(interval);
