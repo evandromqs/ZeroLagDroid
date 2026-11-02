@@ -7,64 +7,64 @@
 (function () {
   'use strict';
 
-  // Modelos de mensagens humanizadas (sem tom de robô)
+  // Modelos de mensagens humanizadas e profissionais (sem gírias excessivas)
   const defaultTemplates = {
     pixKey: "seu-pix-aqui",
     userName: "Evandro",
     neighborhood: "Zona Leste (SP)",
     
-    msg1: `Opa mano, tudo bem? Vi sua mensagem aqui! 👊
+    msg1: `Olá, tudo bem? Vi sua mensagem aqui!
 
-Qual é o modelo do seu celular e quais aplicativos você mais roda nele no dia a dia? Uber, 99 ou iFood?`,
+Qual é o modelo do seu celular e quais aplicativos você mais utiliza no dia a dia? (Uber, 99 ou iFood?)`,
 
-    msg2: `Pô, esse aparelho é bom, o problema é que com as atualizações o sistema da marca vai acumulando muita coisa inútil em segundo plano e fica engasgando na hora que toca a corrida.
+    msg2: `Esse aparelho é muito bom. O que acontece é que, com as atualizações, o sistema vai acumulando processos desnecessários em segundo plano e começa a travar na hora que toca a corrida.
 
-Eu faço um serviço pelo computador que tira todo esse peso, libera bastante memória RAM e blinda os apps da Uber e 99 pra não fecharem mais sozinhos.
+O procedimento que eu faço é direto pelo computador: ele remove todo esse peso, libera bastante memória RAM e otimiza os aplicativos de corrida para não fecharem sozinhos.
 
-Não precisa formatar nada, não perde fotos, nem conversas, nem nada.
+Não precisa formatar o aparelho: não apaga fotos, mensagens nem senhas. Fica tudo intacto.
 
-Os valores são bem tranquilos:
-• Presencial aqui na Zona Leste: R$ 50 (a gente marca num posto ou shopping de boa)
-• Online / Remoto: R$ 30 (se você tiver um computador com internet em casa)
+Valores do serviço:
+• Presencial (Zona Leste - SP): R$ 50,00 (podemos combinar em um local de fácil acesso)
+• Remoto / Online: R$ 30,00 (caso você tenha um computador com internet)
 
-E o melhor: você só me paga depois que ver o celular respondendo na hora!`,
+E o pagamento é feito somente após você testar o aparelho e aprovar o resultado!`,
 
-    msg3_presencial: `Sobre o presencial: eu atendo aqui na Zona Leste de SP.
+    msg3_presencial: `Sobre o atendimento presencial: eu atendo aqui na Zona Leste de São Paulo.
 
-A gente pode marcar num posto de gasolina, shopping ou ponto de apoio que fique fácil pra nós dois. Eu levo o notebook e em 5 minutinhos já te entrego ele pronto pra rodar.
+Podemos marcar em um local prático para nós dois, como um posto, shopping ou ponto de apoio. Eu levo o notebook e em cerca de 5 a 10 minutos já te entrego o aparelho pronto.
 
-Qual bairro aqui da ZL fica melhor pra você?`,
+Qual bairro aqui da Zona Leste fica melhor para você?`,
 
-    msg3_online: `Pro atendimento online de R$ 30, é bem simples:
+    msg3_online: `Para o atendimento remoto de R$ 30,00, é bem simples:
 
-Você só precisa ter um computador ou notebook com internet aí. A gente conecta o celular no cabo USB do PC e eu faço tudo daqui rapidinho pelo AnyDesk enquanto você acompanha na tela.
+Você só precisa ter um computador ou notebook com internet aí. Nós conectamos o celular no cabo USB do computador e eu faço o procedimento à distância pelo AnyDesk, enquanto você acompanha tudo na tela.
 
-Você tem PC ou notebook aí agora?`,
+Você tem computador ou notebook disponível no momento?`,
 
-    msg4_usb: `Pra gente conectar no computador, só faz esse passo a passo rápido no seu celular:
+    msg4_usb: `Para o computador reconhecer o celular, siga esse passo a passo rápido no seu aparelho:
 
-1. Entra nas Configurações do celular e vai em "Sobre o telefone"
-2. Clica em "Informações do software"
-3. Clica 7 vezes seguidas em cima de "Número de compilação" (vai avisar que ativou o modo desenvolvedor)
-4. Agora volta nas Configurações, desce tudo e entra em "Opções do desenvolvedor"
-5. Ativa a chave "Depuração USB"
+1. Abra as Configurações e vá em "Sobre o telefone"
+2. Toque em "Informações do software"
+3. Toque 7 vezes seguidas na opção "Número de compilação" (vai avisar que ativou o modo desenvolvedor)
+4. Volte nas Configurações, desça até o fim e entre em "Opções do desenvolvedor"
+5. Ative a opção "Depuração USB"
 
-Aí é só plugar no cabo do computador. Na tela do celular vai aparecer uma caixinha perguntando se permite a depuração USB. Marca a caixinha "Sempre permitir" e clica em Permitir.`,
+Depois disso, conecte o cabo USB no computador. Na tela do celular vai aparecer uma mensagem solicitando autorização. Basta marcar a caixinha "Sempre permitir" e confirmar em Permitir.`,
 
-    msg5_teste: `Prontinho meu parceiro! Aparelho tá 100% pronto e reiniciado! 🚀
+    msg5_teste: `Prontinho! Aparelho 100% otimizado e reiniciado! 🚀
 
-Dá uma mexida nele aí agora pra você sentir a diferença. Abre a Uber, a 99 e o Maps.
+Pode fazer um teste agora: abra os aplicativos da Uber, 99 e o Maps para sentir a diferença.
 
-Ficou mais leve e rápido no toque?`,
+Sentiu que o toque e a navegação ficaram mais rápidos?`,
 
-    msg6_pix: `Show de bola mano, fico feliz demais que tenha gostado! Agora é só acelerar e faturar sem dor de cabeça de app travando! 👊
+    msg6_pix: `Muito obrigado! Fico feliz que tenha gostado do resultado. Agora é trabalhar com tranquilidade e sem travamentos!
 
-Seguem os dados do Pix:
+Seguem os dados para o Pix:
 Chave Pix: {PIX_KEY}
 Nome: {USER_NAME}
 Valor: {VALOR}
 
-Se puder indicar pros parceiros da rodagem ou mandar no grupo de motoristas aí, me ajuda muito! Tamo junto!`
+Se puder indicar para outros colegas motoristas ou compartilhar nos grupos, agradeço muito!`
   };
 
   let templates = { ...defaultTemplates };
