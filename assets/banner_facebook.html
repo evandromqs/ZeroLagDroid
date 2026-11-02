@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    }
+    body {
+      width: 1080px;
+      height: 1080px;
+      background: radial-gradient(circle at 50% 10%, #1a1e29 0%, #0d1117 100%);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+    }
+    .badge {
+      display: inline-block;
+      background: linear-gradient(90deg, #ff9800, #ff5722);
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 6px 18px;
+      border-radius: 50px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 15px rgba(255, 87, 34, 0.4);
+    }
+    .title {
+      font-size: 38px;
+      font-weight: 900;
+      line-height: 1.15;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+    }
+    .title span {
+      color: #00e676;
+      text-shadow: 0 0 20px rgba(0, 230, 118, 0.4);
+    }
+    .subtitle {
+      font-size: 19px;
+      color: #a0aec0;
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    /* Comparison Container */
+    .comparison-container {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      gap: 36px;
+      margin-top: 15px;
+      margin-bottom: 15px;
+    }
+
+    .card {
+      flex: 1;
+      max-width: 480px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 24px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+    }
+
+    .card.before {
+      border-color: rgba(244, 67, 54, 0.4);
+      box-shadow: 0 10px 30px rgba(244, 67, 54, 0.15);
+    }
+    .card.after {
+      border-color: rgba(0, 230, 118, 0.5);
+      box-shadow: 0 10px 30px rgba(0, 230, 118, 0.2);
+    }
+
+    .card-tag {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      padding: 6px 22px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+    .card.before .card-tag {
+      background: #f44336;
+      color: #fff;
+    }
+    .card.after .card-tag {
+      background: #00e676;
+      color: #0d1117;
+    }
+
+    .phone-mockup {
+      width: 250px;
+      height: 470px;
+      border-radius: 28px;
+      border: 5px solid #2d3748;
+      overflow: hidden;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+      background: #000;
+      margin-bottom: 16px;
+    }
+    .phone-mockup img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .specs-list {
+      width: 100%;
+      list-style: none;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .specs-list li {
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+    .card.before .specs-list li {
+      color: #ff8a80;
+    }
+    .card.after .specs-list li {
+      color: #b9f6ca;
+    }
+
+    /* Footer Banner */
+    .footer {
+      background: linear-gradient(90deg, #1e293b, #0f172a);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .footer-info {
+      text-align: left;
+    }
+    .footer-info h4 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffeb3b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .footer-info p {
+      font-size: 14px;
+      color: #cbd5e1;
+      margin-top: 2px;
+    }
+    .cta-btn {
+      background: linear-gradient(135deg, #00e676 0%, #00b0ff 100%);
+      color: #000;
+      font-weight: 900;
+      font-size: 18px;
+      padding: 14px 28px;
+      border-radius: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 20px rgba(0, 230, 118, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="badge">🚗 Especial Para Motoristas & Entregadores 🛵</div>
+    <h1 class="title">Seu celular trava na hora da corrida?</h1>
+    <p class="subtitle">Otimização Profissional Sem Formatar • Sem Perder Nada • Sem Root</p>
+  </div>
+
+  <!-- Comparison -->
+  <div class="comparison-container">
+    
+    <!-- ANTES -->
+    <div class="card before">
+      <div class="card-tag">🔴 ANTES (Travando)</div>
+      <div class="phone-mockup">
+        <img src="antes.png" alt="Antes">
+      </div>
+      <ul class="specs-list">
+        <li>❌ Apenas 123 MB de RAM livre</li>
+        <li>❌ Memória virtual (RAM Plus) engasgando</li>
+        <li>❌ Aplicativo fechando bem na rota</li>
+        <li>❌ Travamentos e lentidão ao aceitar</li>
+      </ul>
+    </div>
+
+    <!-- DEPOIS -->
+    <div class="card after">
+      <div class="card-tag">🟢 DEPOIS (Voando)</div>
+      <div class="phone-mockup">
+        <img src="depois.png" alt="Depois">
+      </div>
+      <ul class="specs-list">
+        <li>✅ Mais de 2.100 MB (2.1 GB) de RAM Livre</li>
+        <li>✅ Uber, 99 e iFood 100% blindados</li>
+        <li>✅ Resposta instantânea a cada toque</li>
+        <li>✅ Bateria durando muito mais no trânsito</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-info">
+      <h4>⚡ FEITO EM 5 MINUTOS NO CABO OU WI-FI</h4>
+      <p>🛡️ Garantia Total: Teste na primeira corrida. Se não sentir a diferença, não paga nada!</p>
+    </div>
+    <div class="cta-btn">
+      CHAMA NO DIRECT / WHATSAPP
+    </div>
+  </div>
+
+</body>
+</html>
