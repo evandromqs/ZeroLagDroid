@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <style>
     body {
-      width: 300px;
+      width: 320px;
       padding: 16px;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
       background: #0d1117;
       color: #c9d1d9;
       margin: 0;
@@ -52,11 +52,24 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13px;
       margin-top: 4px;
+      transition: all 0.2s;
     }
     button:hover {
       opacity: 0.9;
+    }
+    .btn-secondary {
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .btn-secondary:hover {
+      background: #30363d;
+      color: #00e676;
+      border-color: #00e676;
     }
     .status {
       font-size: 11px;
@@ -72,7 +85,7 @@
   
   <div class="field">
     <label>Sua Chave Pix:</label>
-    <input type="text" id="pixKey" placeholder="Ex: CPF, Telefone ou E-mail">
+    <input type="text" id="pixKey" placeholder="Ex: Telefone, CPF ou E-mail">
   </div>
 
   <div class="field">
@@ -81,6 +94,7 @@
   </div>
 
   <button id="saveBtn">Salvar Dados</button>
+  <button id="openOptionsBtn" class="btn-secondary">⚙️ Abrir Central de Ajustes Completa</button>
   <div id="status" class="status">✅ Dados salvos com sucesso!</div>
 
   <script src="popup.js"></script>

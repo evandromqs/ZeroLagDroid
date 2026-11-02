@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajustes e Personalização - ZeroLagDroid</title>
+  <style>
+    :root {
+      --bg-dark: #0d1117;
+      --bg-card: #161b22;
+      --bg-card-hover: #1c2128;
+      --border: #30363d;
+      --accent: #00e676;
+      --accent-hover: #00c853;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --yellow: #ffeb3b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    }
+
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-brand h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-brand p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0d1117;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-card-hover);
+    }
+
+    /* Tabs */
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .tab-btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: var(--bg-card);
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      background: rgba(0, 230, 118, 0.1);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+      line-height: 1.4;
+    }
+
+    .help-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Mensagens Accordion */
+    .msg-group {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .msg-group-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #00e676;
+      color: #0d1117;
+      font-weight: 800;
+      padding: 14px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 230, 118, 0.4);
+      display: none;
+      align-items: center;
+      gap: 10px;
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-brand">
+        <h1>🚀 ZeroLagDroid</h1>
+        <p>Central de Ajustes, Personalização de Layout e Roteiros</p>
+      </div>
+      <div class="header-actions">
+        <button id="saveTopBtn" class="btn btn-primary">💾 Salvar Alterações</button>
+      </div>
+    </header>
+
+    <!-- Navegação de Abas -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" data-tab="tab-geral">💰 Pix & Valores</button>
+      <button class="tab-btn" data-tab="tab-layout">🖥️ Layout da Tela</button>
+      <button class="tab-btn" data-tab="tab-digitacao">⚡ Velocidade de Digitação</button>
+      <button class="tab-btn" data-tab="tab-roteiro">📝 Textos das Mensagens</button>
+    </div>
+
+    <!-- Aba 1: Pix & Valores -->
+    <div id="tab-geral" class="tab-content">
+      <div class="card">
+        <div class="card-title">💰 Dados para Cobrança Pix</div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Chave Pix:</label>
+            <input type="text" id="pixKey" placeholder="Ex: Telefone, CPF ou E-mail">
+            <div class="help-text">Substitui a tag {PIX_KEY} automaticamente.</div>
+          </div>
+          <div class="form-group">
+            <label>Nome do Titular:</label>
+            <input type="text" id="userName" placeholder="Ex: Evandro Marques">
+            <div class="help-text">Substitui {USER_NAME} na mensagem do Pix.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📍 Região e Preços dos Serviços</div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Valor Presencial (R$):</label>
+            <input type="number" id="pricePresencial" value="50">
+            <div class="help-text">Valor padrão para atendimento presencial.</div>
+          </div>
+          <div class="form-group">
+            <label>Valor Remoto / Online (R$):</label>
+            <input type="number" id="priceOnline" value="30">
+            <div class="help-text">Valor padrão para atendimento via AnyDesk.</div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label>Região / Bairro de Atendimento Presencial:</label>
+          <input type="text" id="neighborhood" value="Zona Leste (SP)">
+          <div class="help-text">Exibido na barra lateral e nas mensagens de agendamento.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aba 2: Layout da Tela -->
+    <div id="tab-layout" class="tab-content" style="display:none;">
+      <div class="card">
+        <div class="card-title">🖥️ Ajustes de Exibição no WhatsApp Web</div>
+        
+        <div class="form-group">
+          <label>Largura da Barra Lateral:</label>
+          <select id="sidebarWidth">
+            <option value="300">300px - Compacta (Recomendada para notebooks e telas pequenas)</option>
+            <option value="320" selected>320px - Equilibrada (Padrão)</option>
+            <option value="350">350px - Confortável</option>
+            <option value="380">380px - Ampla (Para monitores grandes)</option>
+          </select>
+          <div class="help-text">Se o WhatsApp estiver muito apertado na sua tela, selecione 300px ou 320px.</div>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label>Comportamento da Barra Lateral:</label>
+          <select id="sidebarMode">
+            <option value="compress" selected>Comprimir WhatsApp (Lado a lado sem cobrir as conversas)</option>
+            <option value="overlay">Sobrepor (Barra flutua por cima do WhatsApp sem redimensioná-lo)</option>
+          </select>
+          <div class="help-text">O modo "Comprimir" ajusta o WhatsApp para a esquerda. O modo "Sobrepor" mantém o WhatsApp em tela cheia.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aba 3: Velocidade de Digitação -->
+    <div id="tab-digitacao" class="tab-content" style="display:none;">
+      <div class="card">
+        <div class="card-title">⚡ Simulação de Digitação Humana</div>
+        
+        <div class="form-group">
+          <label>Velocidade de Digitação por Caractere:</label>
+          <select id="typingSpeed">
+            <option value="fast" selected>Rápida (12-18ms por letra - recomendado)</option>
+            <option value="medium">Natural (25-35ms por letra)</option>
+            <option value="instant">Instantânea (Cola a mensagem imediatamente sem simular digitação)</option>
+          </select>
+          <div class="help-text">A velocidade simula você digitando no teclado e ativa o status "digitando..." para o cliente.</div>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label>Pausa Entre Mensagens Sequenciais:</label>
+          <select id="pauseDelay">
+            <option value="1000">1.0 segundo (Mais rápido)</option>
+            <option value="1300" selected>1.3 segundos (Intervalo natural ideal)</option>
+            <option value="1800">1.8 segundos (Mais espaçado)</option>
+          </select>
+          <div class="help-text">Tempo de espera entre o envio da mensagem 1, mensagem 2 e mensagem 3.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aba 4: Textos das Mensagens -->
+    <div id="tab-roteiro" class="tab-content" style="display:none;">
+      <div class="card">
+        <div class="card-title" style="justify-content: space-between;">
+          <span>📝 Roteiro de Atendimento (Até 3 mensagens por etapa)</span>
+          <button id="resetDefaultsBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;">🔄 Restaurar Padrões</button>
+        </div>
+
+        <!-- Etapa 1 -->
+        <div class="msg-group">
+          <div class="msg-group-title">Etapa 1: Boas-Vindas & Modelo</div>
+          <div class="form-group">
+            <label>Mensagem 1 (Saudação):</label>
+            <textarea id="msg1_part1"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mensagem 2 (Pergunta de modelo e apps):</label>
+            <textarea id="msg1_part2"></textarea>
+          </div>
+        </div>
+
+        <!-- Etapa 2 -->
+        <div class="msg-group">
+          <div class="msg-group-title">Etapa 2: Explicação, Garantia & Preços</div>
+          <div class="form-group">
+            <label>Mensagem 1 (Diagnóstico):</label>
+            <textarea id="msg2_part1"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mensagem 2 (O que é feito / sem formatação):</label>
+            <textarea id="msg2_part2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mensagem 3 (Valores e Garantia de pagamento após teste):</label>
+            <textarea id="msg2_part3"></textarea>
+          </div>
+        </div>
+
+        <!-- Etapa 3A -->
+        <div class="msg-group">
+          <div class="msg-group-title">Etapa 3A: Presencial ZL</div>
+          <div class="form-group">
+            <label>Mensagem 1 (Região):</label>
+            <textarea id="msg3p_part1"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mensagem 2 (Local de encontro e rapidez):</label>
+            <textarea id="msg3p_part2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mensagem 3 (Pergunta do bairro):</label>
+            <textarea id="msg3p_part3"></textarea>
+          </div>
+        </div>
+
+        <!-- Etapa 3B -->
+        <div class="msg-group">
+          <div class="msg-group-title">Etapa 3B: Remoto (PC / Online)</div>
+          <div class="form-group">
+            <label>Mensagem 1 (Apresentação):</label>
+            <textarea id="msg3o_part1"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mensagem 2 (AnyDesk e USB):</label>
+            <textarea id="msg3o_part2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mensagem 3 (Pergunta se tem PC):</label>
+            <textarea id="msg3o_part3"></textarea>
+          </div>
+        </div>
+
+        <!-- Etapa 4 -->
+        <div class="msg-group">
+          <div class="msg-group-title">Etapa 4: Como Ativar Depuração USB</div>
+          <div class="form-group">
+            <label>Mensagem 1:</label>
+            <textarea id="msg4_part1"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mensagem 2 (Passo a passo):</label>
+            <textarea id="msg4_part2"></textarea>
+          </div>
+        </div>
+
+        <!-- Etapa 5 -->
+        <div class="msg-group">
+          <div class="msg-group-title">Etapa 5: Teste Pós-Otimização</div>
+          <div class="form-group">
+            <label>Mensagem 1 (Aparelho reiniciado):</label>
+            <textarea id="msg5_part1"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mensagem 2 (Pede para testar):</label>
+            <textarea id="msg5_part2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mensagem 3 (Pergunta se ficou mais rápido):</label>
+            <textarea id="msg5_part3"></textarea>
+          </div>
+        </div>
+
+        <!-- Etapa 6 -->
+        <div class="msg-group">
+          <div class="msg-group-title">Etapa 6: Agradecimento & Indicação</div>
+          <div class="form-group">
+            <label>Mensagem 1 (Agradecimento):</label>
+            <textarea id="msg6_part1"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mensagem 3 (Pedido de indicação):</label>
+            <textarea id="msg6_part3"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botão Inferior Salvar -->
+    <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+      <button id="saveBottomBtn" class="btn btn-primary" style="padding: 12px 28px; font-size: 15px;">💾 Salvar Todas as Configurações</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">
+    <span>✅ Configurações salvas e aplicadas com sucesso no WhatsApp!</span>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

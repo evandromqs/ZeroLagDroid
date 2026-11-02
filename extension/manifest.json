@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ZeroLagDroid - Atendimento WhatsApp Web",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Painel de atendimento rápido com scripts pré-definidos para WhatsApp Web. Preenche mensagens com 1 clique.",
   "icons": {
     "16": "icons/icon16.png",
@@ -24,5 +24,15 @@
       "128": "icons/icon128.png"
     }
   },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["options.html"],
+      "matches": ["https://web.whatsapp.com/*"]
+    }
+  ],
   "permissions": ["storage"]
 }

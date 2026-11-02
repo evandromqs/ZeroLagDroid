@@ -2,95 +2,185 @@
  * ZeroLagDroid - WhatsApp Web Fast Response Extension
  * Barra lateral retrátil acoplada ao canto direito, comprimindo o WhatsApp.
  * Versão 1.2:
- * - Fluxo automatizado de digitação rápida humana (10-20ms/char)
- * - Divide etapas em até 3 mensagens sequenciais naturais (bolhas separadas)
- * - Digita, envia e aguarda com pausa humana de 1 a 1.5s entre cada mensagem
- * - Feedback visual no botão com opção de cancelamento a qualquer instante
+ * - Layout responsivo que NUNCA corta o WhatsApp Web (sem mexer em div[tabindex])
+ * - Suporte a largura configurável e modo sobreposição (overlay)
+ * - Botão de engrenagem ⚙️ no cabeçalho para abrir a Central de Ajustes
+ * - Textos, preços, chaves Pix e velocidades 100% editáveis pelo usuário
+ * - Fluxo automatizado de digitação rápida simulada com auto-envio
  */
 
 (function () {
   'use strict';
 
-  // Configuração padrão de dados
-  const config = {
+  // Configuração padrão
+  const defaultConfig = {
     pixKey: "11976920649",
     userName: "Evandro Marques",
-    neighborhood: "Zona Leste (SP)"
+    neighborhood: "Zona Leste (SP)",
+    pricePresencial: "50",
+    priceOnline: "30",
+    sidebarWidth: "320",
+    sidebarMode: "compress",
+    typingSpeed: "fast",
+    pauseDelay: 1300,
+    customFlows: {}
   };
 
-  // Carregar dados salvos no storage do Chrome
-  if (chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(['pixKey', 'userName', 'neighborhood'], (res) => {
-      if (res.pixKey) config.pixKey = res.pixKey;
-      if (res.userName) config.userName = res.userName;
-      if (res.neighborhood) config.neighborhood = res.neighborhood;
-    });
+  let config = { ...defaultConfig };
+
+  // Textos padrões
+  const defaultFlows = {
+    msg1: [
+      "Olá, tudo bem? Vi sua mensagem aqui!",
+      "Qual é o modelo do seu celular e quais aplicativos você mais utiliza no dia a dia? (Uber, 99 ou iFood?)"
+    ],
+    msg2: [
+      "Esse aparelho é muito bom! O que acontece é que, com as atualizações, o sistema vai acumulando processos pesados em segundo plano e começa a engasgar na hora que toca a corrida.",
+      "O procedimento que eu faço é direto pelo computador: ele remove todo esse peso, libera bastante memória RAM e blinda os apps para não fecharem sozinhos. Não formata nada e não perde fotos nem conversas.",
+      "Os valores são bem tranquilos: R$ {PRICE_PRESENCIAL} presencial aqui na {NEIGHBORHOOD} ou R$ {PRICE_ONLINE} online se tiver computador. E você só paga depois que testar o aparelho e aprovar o resultado!"
+    ],
+    msg3_presencial: [
+      "Sobre o atendimento presencial: eu atendo aqui na {NEIGHBORHOOD}.",
+      "A gente combina em um local prático para nós dois, como um shopping, posto ou ponto de apoio. Eu levo o notebook e em cerca de 5 a 10 minutos já te entrego o aparelho pronto.",
+      "Qual bairro aqui da {NEIGHBORHOOD} fica mais fácil para você?"
+    ],
+    msg3_online: [
+      "Para o atendimento remoto de R$ {PRICE_ONLINE},00, é bem simples e rápido:",
+      "Você só precisa ter um computador ou notebook com internet aí. Nós conectamos o celular no cabo USB do computador e eu faço tudo daqui à distância pelo AnyDesk, enquanto você acompanha na tela.",
+      "Você tem computador ou notebook disponível aí no momento?"
+    ],
+    msg4_usb: [
+      "Para o computador reconhecer o celular, siga esse passo a passo rápido:",
+      "1. Abra Configurações > Sobre o telefone > Informações do software e dê 7 toques seguidos em 'Número de compilação'.",
+      "2. Volte nas Configurações, entre em 'Opções do desenvolvedor', ative 'Depuração USB' e conecte o cabo no PC marcando 'Sempre permitir'."
+    ],
+    msg5_teste: [
+      "Prontinho! Aparelho 100% otimizado e reiniciado! 🚀",
+      "Pode fazer um teste agora: abra os aplicativos da Uber, 99 e o Maps para sentir a diferença.",
+      "Sentiu que o toque e a navegação ficaram bem mais rápidos?"
+    ],
+    msg6_pix_presencial: [
+      "Muito obrigado! Fico muito feliz que tenha gostado do resultado. Agora é trabalhar com tranquilidade e sem travamentos!",
+      "Seguem os dados para o Pix:\nChave Pix: {PIX_KEY}\nNome: {USER_NAME}\nValor: R$ {PRICE_PRESENCIAL},00 (Presencial - {NEIGHBORHOOD})",
+      "Se puder indicar para outros colegas motoristas ou compartilhar nos grupos, agradeço muito!"
+    ],
+    msg6_pix_online: [
+      "Muito obrigado! Fico muito feliz que tenha gostado do resultado. Agora é trabalhar com tranquilidade e sem travamentos!",
+      "Seguem os dados para o Pix:\nChave Pix: {PIX_KEY}\nNome: {USER_NAME}\nValor: R$ {PRICE_ONLINE},00 (Remoto / Online)",
+      "Se puder indicar para outros colegas motoristas ou compartilhar nos grupos, agradeço muito!"
+    ]
+  };
+
+  // Aplicar variáveis de estilo ao DOM
+  function applyLayoutSettings() {
+    const width = config.sidebarWidth || "320";
+    document.documentElement.style.setProperty('--zld-sidebar-width', `${width}px`);
+
+    if (config.sidebarMode === 'overlay') {
+      document.body.classList.add('zld-mode-overlay');
+    } else {
+      document.body.classList.remove('zld-mode-overlay');
+    }
+
+    // Atualizar preços na barra
+    const presencialEl = document.querySelector('.price-chip.presencial b');
+    if (presencialEl) presencialEl.textContent = `R$ ${config.pricePresencial || '50'}`;
+
+    const onlineEl = document.querySelector('.price-chip.online b');
+    if (onlineEl) onlineEl.textContent = `R$ ${config.priceOnline || '30'}`;
+
+    // Disparar redimensionamento para o WhatsApp reajustar layout sem cortes
+    window.dispatchEvent(new Event('resize'));
   }
 
-  // Modelos de mensagens divididos em fluxos sequenciais naturais (máximo 3 mensagens por etapa)
-  function getFlowMessages(action) {
-    switch (action) {
-      case 'msg1':
-        return [
-          "Olá, tudo bem? Vi sua mensagem aqui!",
-          "Qual é o modelo do seu celular e quais aplicativos você mais utiliza no dia a dia? (Uber, 99 ou iFood?)"
-        ];
-
-      case 'msg2':
-        return [
-          "Esse aparelho é muito bom! O que acontece é que, com as atualizações, o sistema vai acumulando processos pesados em segundo plano e começa a engasgar na hora que toca a corrida.",
-          "O procedimento que eu faço é direto pelo computador: ele remove todo esse peso, libera bastante memória RAM e blinda os apps para não fecharem sozinhos. Não formata nada e não perde fotos nem conversas.",
-          "Os valores são bem tranquilos: R$ 50 presencial aqui na Zona Leste ou R$ 30 online se tiver computador. E você só paga depois que testar o aparelho e aprovar o resultado!"
-        ];
-
-      case 'msg3_presencial':
-        return [
-          "Sobre o atendimento presencial: eu atendo aqui na Zona Leste de São Paulo.",
-          "A gente combina em um local prático para nós dois, como um shopping, posto ou ponto de apoio. Eu levo o notebook e em cerca de 5 a 10 minutos já te entrego o aparelho pronto.",
-          "Qual bairro aqui da Zona Leste fica mais fácil para você?"
-        ];
-
-      case 'msg3_online':
-        return [
-          "Para o atendimento remoto de R$ 30,00, é bem simples e rápido:",
-          "Você só precisa ter um computador ou notebook com internet aí. Nós conectamos o celular no cabo USB do computador e eu faço tudo daqui à distância pelo AnyDesk, enquanto você acompanha na tela.",
-          "Você tem computador ou notebook disponível aí no momento?"
-        ];
-
-      case 'msg4_usb':
-        return [
-          "Para o computador reconhecer o celular, siga esse passo a passo rápido:",
-          "1. Abra Configurações > Sobre o telefone > Informações do software e dê 7 toques seguidos em 'Número de compilação'.",
-          "2. Volte nas Configurações, entre em 'Opções do desenvolvedor', ative 'Depuração USB' e conecte o cabo no PC marcando 'Sempre permitir'."
-        ];
-
-      case 'msg5_teste':
-        return [
-          "Prontinho! Aparelho 100% otimizado e reiniciado! 🚀",
-          "Pode fazer um teste agora: abra os aplicativos da Uber, 99 e o Maps para sentir a diferença.",
-          "Sentiu que o toque e a navegação ficaram bem mais rápidos?"
-        ];
-
-      case 'msg6_pix_presencial':
-        return [
-          "Muito obrigado! Fico muito feliz que tenha gostado do resultado. Agora é trabalhar com tranquilidade e sem travamentos!",
-          `Seguem os dados para o Pix:\nChave Pix: ${config.pixKey}\nNome: ${config.userName}\nValor: R$ 50,00 (Presencial - Zona Leste)`,
-          "Se puder indicar para outros colegas motoristas ou compartilhar nos grupos, agradeço muito!"
-        ];
-
-      case 'msg6_pix_online':
-        return [
-          "Muito obrigado! Fico muito feliz que tenha gostado do resultado. Agora é trabalhar com tranquilidade e sem travamentos!",
-          `Seguem os dados para o Pix:\nChave Pix: ${config.pixKey}\nNome: ${config.userName}\nValor: R$ 30,00 (Remoto / Online)`,
-          "Se puder indicar para outros colegas motoristas ou compartilhar nos grupos, agradeço muito!"
-        ];
-
-      default:
-        return [];
+  // Carregar dados salvos
+  function loadSettings() {
+    if (chrome.storage && chrome.storage.sync) {
+      chrome.storage.sync.get(null, (res) => {
+        if (res) {
+          config = { ...defaultConfig, ...res };
+          applyLayoutSettings();
+        }
+      });
     }
   }
 
-  // Utilitário de pausa assíncrona
+  // Ouvir alterações de configurações em tempo real
+  if (chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'sync' || area === 'local') {
+        loadSettings();
+      }
+    });
+  }
+
+  loadSettings();
+
+  // Obter mensagens personalizadas com substituições dinâmicas
+  function getFlowMessages(action) {
+    let list = [];
+    const custom = config.customFlows || {};
+
+    if (action === 'msg1') {
+      list = [
+        custom.msg1_part1 || defaultFlows.msg1[0],
+        custom.msg1_part2 || defaultFlows.msg1[1]
+      ];
+    } else if (action === 'msg2') {
+      list = [
+        custom.msg2_part1 || defaultFlows.msg2[0],
+        custom.msg2_part2 || defaultFlows.msg2[1],
+        custom.msg2_part3 || defaultFlows.msg2[2]
+      ];
+    } else if (action === 'msg3_presencial') {
+      list = [
+        custom.msg3p_part1 || defaultFlows.msg3_presencial[0],
+        custom.msg3p_part2 || defaultFlows.msg3_presencial[1],
+        custom.msg3p_part3 || defaultFlows.msg3_presencial[2]
+      ];
+    } else if (action === 'msg3_online') {
+      list = [
+        custom.msg3o_part1 || defaultFlows.msg3_online[0],
+        custom.msg3o_part2 || defaultFlows.msg3_online[1],
+        custom.msg3o_part3 || defaultFlows.msg3_online[2]
+      ];
+    } else if (action === 'msg4_usb') {
+      list = [
+        custom.msg4_part1 || defaultFlows.msg4_usb[0],
+        custom.msg4_part2 || defaultFlows.msg4_usb[1]
+      ];
+    } else if (action === 'msg5_teste') {
+      list = [
+        custom.msg5_part1 || defaultFlows.msg5_teste[0],
+        custom.msg5_part2 || defaultFlows.msg5_teste[1],
+        custom.msg5_part3 || defaultFlows.msg5_teste[2]
+      ];
+    } else if (action === 'msg6_pix_presencial') {
+      list = [
+        custom.msg6_part1 || defaultFlows.msg6_pix_presencial[0],
+        defaultFlows.msg6_pix_presencial[1],
+        custom.msg6_part3 || defaultFlows.msg6_pix_presencial[2]
+      ];
+    } else if (action === 'msg6_pix_online') {
+      list = [
+        custom.msg6_part1 || defaultFlows.msg6_pix_online[0],
+        defaultFlows.msg6_pix_online[1],
+        custom.msg6_part3 || defaultFlows.msg6_pix_online[2]
+      ];
+    }
+
+    // Aplicar substituição de variáveis
+    return list.map((msg) =>
+      msg
+        .replace(/\{PIX_KEY\}/g, config.pixKey || "11976920649")
+        .replace(/\{USER_NAME\}/g, config.userName || "Evandro Marques")
+        .replace(/\{PRICE_PRESENCIAL\}/g, config.pricePresencial || "50")
+        .replace(/\{PRICE_ONLINE\}/g, config.priceOnline || "30")
+        .replace(/\{NEIGHBORHOOD\}/g, config.neighborhood || "Zona Leste (SP)")
+    );
+  }
+
+  // Utilitário de pausa
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   // Localizar campo de digitação do WhatsApp Web
@@ -116,13 +206,23 @@
     );
   }
 
-  // Digitação rápida simulada caractere a caractere (10-22ms por letra)
+  // Digitação rápida ou instantânea
   async function typeMessageIntoWhatsApp(input, text, isAborted) {
     input.focus();
 
-    // Limpar qualquer rascunho anterior
+    // Limpar rascunho anterior
     document.execCommand('selectAll', false, null);
     document.execCommand('delete', false, null);
+
+    // Modo instantâneo: insere direto
+    if (config.typingSpeed === 'instant') {
+      document.execCommand('insertText', false, text);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await sleep(100);
+      return true;
+    }
+
+    const delayRange = config.typingSpeed === 'medium' ? [25, 35] : [12, 18];
 
     for (let i = 0; i < text.length; i++) {
       if (isAborted()) return false;
@@ -130,7 +230,6 @@
       const char = text[i];
 
       if (char === '\n') {
-        // Dispara Shift+Enter para criar quebra de linha real no editor Lexical do WhatsApp
         input.dispatchEvent(
           new KeyboardEvent('keydown', {
             key: 'Enter',
@@ -151,20 +250,18 @@
             })
           );
         } catch (e) {}
-        await sleep(30);
+        await sleep(25);
       } else {
         document.execCommand('insertText', false, char);
-        // Digitação acelerada, porém fluida e natural (12 a 22ms)
-        await sleep(12 + Math.floor(Math.random() * 10));
+        await sleep(delayRange[0] + Math.floor(Math.random() * (delayRange[1] - delayRange[0])));
       }
     }
 
-    // Notificar o React do WhatsApp que o conteúdo mudou
     input.dispatchEvent(new Event('input', { bubbles: true }));
     return true;
   }
 
-  // Disparo do envio da mensagem digitada
+  // Envio da mensagem
   async function sendCurrentMessage(input, isAborted) {
     if (isAborted()) return false;
     await sleep(200);
@@ -185,28 +282,23 @@
       );
     }
 
-    // Aguardar confirmação de envio no DOM
     await sleep(350);
     return true;
   }
 
-  // Controle de fluxo ativo
+  // Controle de fluxo
   let currentFlow = null;
 
-  // Executor do fluxo de mensagens com digitação e intervalos humanos
   async function executeFlow(action, btn) {
     const messages = getFlowMessages(action);
     if (!messages || messages.length === 0) return;
 
-    // Se já havia um fluxo rodando:
     if (currentFlow) {
-      const isSameButton = currentFlow.btn === btn;
+      const isSame = currentFlow.btn === btn;
       currentFlow.aborted = true;
       if (currentFlow.cleanup) currentFlow.cleanup();
       currentFlow = null;
-
-      // Se clicou no mesmo botão que estava rodando, cancela e encerra
-      if (isSameButton) return;
+      if (isSame) return;
     }
 
     const input = getChatInput();
@@ -215,11 +307,7 @@
       return;
     }
 
-    const flowState = {
-      aborted: false,
-      btn: btn,
-      cleanup: null
-    };
+    const flowState = { aborted: false, btn: btn, cleanup: null };
     currentFlow = flowState;
 
     const originalHTML = btn.innerHTML;
@@ -238,7 +326,6 @@
         const total = messages.length;
         const text = messages[i];
 
-        // Atualizar status no botão: Digitando
         btn.innerHTML = `
           <div class="btn-top">
             <span class="step-num">${msgIndex}/${total}</span>
@@ -253,7 +340,6 @@
         const typed = await typeMessageIntoWhatsApp(input, text, () => flowState.aborted);
         if (!typed || flowState.aborted) break;
 
-        // Atualizar status no botão: Enviando
         btn.innerHTML = `
           <div class="btn-top">
             <span class="step-num">${msgIndex}/${total}</span>
@@ -268,7 +354,6 @@
         await sendCurrentMessage(input, () => flowState.aborted);
         if (flowState.aborted) break;
 
-        // Se houver próxima mensagem, aguardar intervalo humano de 1.2 a 1.5 segundos
         if (i < total - 1 && !flowState.aborted) {
           btn.innerHTML = `
             <div class="btn-top">
@@ -277,14 +362,13 @@
             </div>
             <div class="zld-flow-status">
               <div class="zld-pulse-dot"></div>
-              <span>Pausa natural (1.3s)...</span>
+              <span>Pausa natural...</span>
             </div>
           `;
-          await sleep(1200 + Math.floor(Math.random() * 300));
+          await sleep(config.pauseDelay || 1300);
         }
       }
 
-      // Conclusão com sucesso
       if (!flowState.aborted) {
         btn.classList.remove('is-active-flow');
         btn.classList.add('is-success');
@@ -309,7 +393,7 @@
     }
   }
 
-  // Criação da Barra Lateral e Botão de Abertura
+  // Criação da Barra Lateral
   function createSidebar() {
     if (document.getElementById('zerolag-sidebar-root')) return;
 
@@ -329,17 +413,20 @@
             <span class="brand-title">🚀 ZeroLagDroid</span>
             <span class="brand-sub">Fluxo Automático & Humanizado</span>
           </div>
-          <button id="zld-collapse-btn" title="Recolher Barra Lateral">&times;</button>
+          <div class="zld-header-actions">
+            <button id="zld-settings-btn" title="Central de Ajustes e Personalização">⚙️ Ajustes</button>
+            <button id="zld-collapse-btn" title="Recolher Barra Lateral">&times;</button>
+          </div>
         </div>
 
         <div class="zld-price-bar">
           <div class="price-chip presencial">
             <span>📍 ZL (Presencial)</span>
-            <b>R$ 50</b>
+            <b>R$ ${config.pricePresencial || '50'}</b>
           </div>
           <div class="price-chip online">
             <span>💻 Remoto (PC)</span>
-            <b>R$ 30</b>
+            <b>R$ ${config.priceOnline || '30'}</b>
           </div>
         </div>
 
@@ -359,7 +446,7 @@
               <span class="step-num">2</span>
               <span class="step-label">Explicação, Garantia & Preços</span>
             </div>
-            <div class="btn-preview">3 msgs: Como funciona + R$ 50 / R$ 30 + Garantia</div>
+            <div class="btn-preview">3 msgs: Como funciona + Valores + Garantia</div>
           </button>
 
           <div class="zld-grid-2">
@@ -385,7 +472,7 @@
               <span class="step-num">4</span>
               <span class="step-label">Como Ativar Depuração USB</span>
             </div>
-            <div class="btn-preview">3 msgs: 7 toques no compilação + autorização</div>
+            <div class="btn-preview">Passo a passo com 7 toques + autorização</div>
           </button>
 
           <button class="zld-script-btn" data-action="msg5_teste">
@@ -401,14 +488,14 @@
           <div class="zld-grid-2">
             <button class="zld-script-btn pix-btn" data-action="msg6_pix_presencial">
               <div class="btn-top">
-                <span>💰 Pix R$ 50</span>
+                <span>💰 Pix R$ ${config.pricePresencial || '50'}</span>
               </div>
-              <div class="btn-preview">3 msgs: Pix ZL</div>
+              <div class="btn-preview">3 msgs: Pix Presencial</div>
             </button>
 
             <button class="zld-script-btn pix-btn" data-action="msg6_pix_online">
               <div class="btn-top">
-                <span>💰 Pix R$ 30</span>
+                <span>💰 Pix R$ ${config.priceOnline || '30'}</span>
               </div>
               <div class="btn-preview">3 msgs: Pix Remoto</div>
             </button>
@@ -425,6 +512,7 @@
 
     const handleBtn = document.getElementById('zerolag-handle-btn');
     const collapseBtn = document.getElementById('zld-collapse-btn');
+    const settingsBtn = document.getElementById('zld-settings-btn');
     const arrow = handleBtn.querySelector('.handle-arrow');
 
     function toggleSidebar(open) {
@@ -443,12 +531,23 @@
       if (chrome.storage && chrome.storage.local) {
         chrome.storage.local.set({ zld_sidebar_open: isOpen });
       }
+
+      // Notificar o WhatsApp para recalcular seu layout responsivo sem cortes
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 280);
     }
 
     handleBtn.addEventListener('click', () => toggleSidebar());
     collapseBtn.addEventListener('click', () => toggleSidebar(false));
 
-    // Carregar preferência salva
+    // Botão de Ajustes (abre options.html em nova aba)
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        window.open(chrome.runtime.getURL('options.html'), '_blank');
+      });
+    }
+
+    // Carregar estado salvo da barra
     if (chrome.storage && chrome.storage.local) {
       chrome.storage.local.get(['zld_sidebar_open'], (res) => {
         const shouldOpen = res.zld_sidebar_open !== undefined ? res.zld_sidebar_open : true;
@@ -458,7 +557,7 @@
       toggleSidebar(true);
     }
 
-    // Clique em botão de fluxo
+    // Clique em botão de script
     root.addEventListener('click', (e) => {
       const btn = e.target.closest('.zld-script-btn');
       if (!btn) return;
@@ -468,6 +567,8 @@
         executeFlow(action, btn);
       }
     });
+
+    applyLayoutSettings();
   }
 
   // Inicialização quando o WhatsApp Web estiver pronto

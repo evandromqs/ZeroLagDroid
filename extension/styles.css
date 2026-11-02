@@ -2,19 +2,26 @@
    ZeroLagDroid - Barra Lateral Integrada ao WhatsApp Web
    ============================================================ */
 
-/* 1. Compressão do WhatsApp Web para a Esquerda */
-body.zld-sidebar-open #app,
-body.zld-sidebar-open div[tabindex="-1"] {
-  width: calc(100vw - 360px) !important;
-  max-width: calc(100vw - 360px) !important;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+:root {
+  --zld-sidebar-width: 320px;
+}
+
+/* 1. Ajuste Seguro do WhatsApp Web (#app) - NUNCA mexer em div[tabindex="-1"] */
+body.zld-sidebar-open:not(.zld-mode-overlay) #app {
+  width: calc(100vw - var(--zld-sidebar-width)) !important;
+  max-width: calc(100vw - var(--zld-sidebar-width)) !important;
+  margin-right: var(--zld-sidebar-width) !important;
+  box-sizing: border-box !important;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 body:not(.zld-sidebar-open) #app,
-body:not(.zld-sidebar-open) div[tabindex="-1"] {
+body.zld-mode-overlay #app {
   width: 100vw !important;
   max-width: 100vw !important;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 /* 2. Botão Flutuante Centralizado na Direita (Sempre Visível) */
@@ -37,7 +44,7 @@ body:not(.zld-sidebar-open) div[tabindex="-1"] {
   align-items: center;
   gap: 8px;
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s, box-shadow 0.2s;
+  transition: right 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s, box-shadow 0.2s;
   user-select: none;
 }
 
@@ -65,7 +72,7 @@ body:not(.zld-sidebar-open) div[tabindex="-1"] {
 
 /* Quando a barra lateral está aberta, o botão acompanha a borda esquerda dela */
 body.zld-sidebar-open #zerolag-handle-btn {
-  right: 360px;
+  right: var(--zld-sidebar-width);
   border-radius: 12px 0 0 12px;
 }
 
@@ -74,7 +81,7 @@ body.zld-sidebar-open #zerolag-handle-btn {
   position: fixed;
   top: 0;
   right: 0;
-  width: 360px;
+  width: var(--zld-sidebar-width);
   height: 100vh;
   background: #0d1117;
   border-left: 1px solid #30363d;
@@ -85,7 +92,7 @@ body.zld-sidebar-open #zerolag-handle-btn {
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
   color: #c9d1d9;
   transform: translateX(100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s ease;
   box-sizing: border-box;
 }
 
@@ -95,7 +102,7 @@ body.zld-sidebar-open #zerolag-sidebar {
 
 /* Header da Barra */
 .zld-sidebar-header {
-  padding: 16px;
+  padding: 14px 16px;
   background: #161b22;
   border-bottom: 1px solid #30363d;
   display: flex;
@@ -104,7 +111,7 @@ body.zld-sidebar-open #zerolag-sidebar {
 }
 
 .brand-title {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
   color: #00e676;
   display: block;
@@ -115,13 +122,40 @@ body.zld-sidebar-open #zerolag-sidebar {
   color: #8b949e;
 }
 
+.zld-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#zld-settings-btn {
+  background: #21262d;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 4px 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#zld-settings-btn:hover {
+  background: #30363d;
+  border-color: #00e676;
+  color: #00e676;
+}
+
 #zld-collapse-btn {
   background: transparent;
   border: none;
   color: #8b949e;
-  font-size: 24px;
+  font-size: 22px;
   cursor: pointer;
   line-height: 1;
+  padding: 0 4px;
 }
 
 #zld-collapse-btn:hover {
