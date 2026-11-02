@@ -1,12 +1,14 @@
 /**
  * ZeroLagDroid - WhatsApp Web Fast Response Extension
- * Injeta um painel flutuante de atendimento rápido no WhatsApp Web.
+ * Barra lateral retrátil acoplada ao canto direito, comprimindo o WhatsApp.
  */
 
 (function () {
   'use strict';
 
-  // Configuração padrão de respostas
+  const SIDEBAR_WIDTH = 360; // Largura da barra lateral em pixels
+
+  // Modelos de mensagens configuráveis
   const defaultTemplates = {
     pixKey: "seu-pix-aqui",
     userName: "Evandro",
@@ -31,7 +33,7 @@ O que nós fazemos nele:
 
 🛡️ Garantia Total: Você só me paga depois que ver o celular respondendo liso e aprovar!`,
 
-    msg3_presencial: `📍 Atendimento Presencial (Zona Leste - SP):
+    msg3_presencial: `📍 Atendimento Presencial (Zona Leste - SP - R$ 50,00):
 Podemos combinar em um ponto de apoio, posto de combustível ou shopping da Zona Leste que fique bom para nós dois. 
 
 Leva apenas 5 minutinhos no cabo USB direto no meu notebook!
@@ -73,7 +75,7 @@ Segue os dados para o Pix:
 
   let templates = { ...defaultTemplates };
 
-  // Carregar dados salvos no storage
+  // Carregar dados salvos
   if (chrome.storage && chrome.storage.sync) {
     chrome.storage.sync.get(['pixKey', 'userName', 'neighborhood'], (res) => {
       if (res.pixKey) templates.pixKey = res.pixKey;
@@ -82,7 +84,7 @@ Segue os dados para o Pix:
     });
   }
 
-  // Função para injetar texto no campo do WhatsApp Web
+  // Inserir texto no input do WhatsApp Web
   function insertIntoWhatsAppInput(text) {
     const inputSelectors = [
       'footer div[contenteditable="true"]',
@@ -107,114 +109,170 @@ Segue os dados para o Pix:
 
     inputField.focus();
 
-    // Inserção compatível com a manipulação de DOM do React no WhatsApp Web
     const success = document.execCommand('insertText', false, text);
-
     if (!success) {
-      // Fallback para ClipboardEvent / InputEvent se execCommand falhar
       inputField.textContent = text;
       inputField.dispatchEvent(new InputEvent('input', { bubbles: true }));
     }
 
-    // Scroll para manter visível
     inputField.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
-  // Criação do Painel Flutuante
-  function createFloatingPanel() {
-    if (document.getElementById('zerolag-floating-root')) return;
+  // Criação da Barra Lateral e Botão Centralizado
+  function createSidebar() {
+    if (document.getElementById('zerolag-sidebar-root')) return;
 
     const root = document.createElement('div');
-    root.id = 'zerolag-floating-root';
+    root.id = 'zerolag-sidebar-root';
 
     root.innerHTML = `
-      <div id="zerolag-toggle-btn" title="Abrir Respostas ZeroLagDroid">
-        <span class="zld-icon">🚀</span>
-        <span class="zld-label">ZeroLag</span>
-      </div>
-      
-      <div id="zerolag-panel" class="zld-hidden">
-        <div class="zld-header">
-          <div class="zld-title">
-            <span>🚀 ZeroLagDroid</span>
-            <small>Atendimento Rápido</small>
+      <!-- Botão Centralizado na Direita (Sempre Visível) -->
+      <button id="zerolag-handle-btn" title="Expandir/Recolher Painel ZeroLag">
+        <span class="handle-arrow">◀</span>
+        <span class="handle-badge">🚀 ZeroLag</span>
+      </button>
+
+      <!-- Barra Lateral -->
+      <aside id="zerolag-sidebar">
+        <div class="zld-sidebar-header">
+          <div class="zld-brand">
+            <span class="brand-title">🚀 ZeroLagDroid</span>
+            <span class="brand-sub">Painel de Atendimento</span>
           </div>
-          <button id="zld-close-btn">&times;</button>
+          <button id="zld-collapse-btn" title="Recolher Barra Lateral">&times;</button>
         </div>
 
-        <div class="zld-price-badge">
-          <span>📍 Presencial: <b>R$ 50</b> (ZL)</span>
-          <span>💻 Online: <b>R$ 30</b></span>
-        </div>
-
-        <div class="zld-buttons-container">
-          <button class="zld-btn" data-action="msg1">
-            <span class="btn-icon">👋</span>
-            <span class="btn-text">1. Boas-Vindas & Pergunta Modelo</span>
-          </button>
-
-          <button class="zld-btn" data-action="msg2">
-            <span class="btn-icon">🛡️</span>
-            <span class="btn-text">2. Explicação, Garantia & Preços</span>
-          </button>
-
-          <div class="zld-row">
-            <button class="zld-btn half" data-action="msg3_presencial">
-              <span class="btn-icon">📍</span>
-              <span class="btn-text">3. Presencial (ZL)</span>
-            </button>
-            <button class="zld-btn half" data-action="msg3_online">
-              <span class="btn-icon">💻</span>
-              <span class="btn-text">3. Online / Remoto</span>
-            </button>
+        <div class="zld-price-bar">
+          <div class="price-chip presencial">
+            <span>📍 ZL (Presencial)</span>
+            <b>R$ 50</b>
           </div>
-
-          <button class="zld-btn" data-action="msg4_usb">
-            <span class="btn-icon">⚙️</span>
-            <span class="btn-text">4. Como Ativar Depuração USB</span>
-          </button>
-
-          <button class="zld-btn" data-action="msg5_teste">
-            <span class="btn-icon">✨</span>
-            <span class="btn-text">5. Teste Pós-Otimização</span>
-          </button>
-
-          <div class="zld-row">
-            <button class="zld-btn half pix-btn" data-action="msg6_pix_presencial">
-              <span class="btn-icon">💰</span>
-              <span class="btn-text">Pix R$ 50 (ZL)</span>
-            </button>
-            <button class="zld-btn half pix-btn" data-action="msg6_pix_online">
-              <span class="btn-icon">💰</span>
-              <span class="btn-text">Pix R$ 30 (Online)</span>
-            </button>
+          <div class="price-chip online">
+            <span>💻 Remoto / Online</span>
+            <b>R$ 30</b>
           </div>
         </div>
 
-        <div class="zld-footer">
-          <small>Clique no botão para preencher na conversa aberta.</small>
+        <div class="zld-content-scroll">
+          <div class="zld-section-title">Etapas do Atendimento</div>
+
+          <button class="zld-script-btn" data-action="msg1">
+            <div class="btn-top">
+              <span class="step-num">1</span>
+              <span class="step-label">Boas-Vindas & Modelo</span>
+            </div>
+            <div class="btn-preview">Pergunta modelo e apps que usa</div>
+          </button>
+
+          <button class="zld-script-btn highlight" data-action="msg2">
+            <div class="btn-top">
+              <span class="step-num">2</span>
+              <span class="step-label">Explicação, Garantia & Preços</span>
+            </div>
+            <div class="btn-preview">R$ 50 ZL / R$ 30 Online + Garantia</div>
+          </button>
+
+          <div class="zld-grid-2">
+            <button class="zld-script-btn" data-action="msg3_presencial">
+              <div class="btn-top">
+                <span class="step-num">3A</span>
+                <span class="step-label">Presencial (ZL)</span>
+              </div>
+              <div class="btn-preview">Combina posto/ponto ZL</div>
+            </button>
+
+            <button class="zld-script-btn" data-action="msg3_online">
+              <div class="btn-top">
+                <span class="step-num">3B</span>
+                <span class="step-label">Remoto (PC)</span>
+              </div>
+              <div class="btn-preview">Explica AnyDesk/cabo</div>
+            </button>
+          </div>
+
+          <button class="zld-script-btn" data-action="msg4_usb">
+            <div class="btn-top">
+              <span class="step-num">4</span>
+              <span class="step-label">Como Ativar Depuração USB</span>
+            </div>
+            <div class="btn-preview">Passo a passo com 7 toques</div>
+          </button>
+
+          <button class="zld-script-btn" data-action="msg5_teste">
+            <div class="btn-top">
+              <span class="step-num">5</span>
+              <span class="step-label">Teste Pós-Otimização</span>
+            </div>
+            <div class="btn-preview">Pede para testar a fluidez</div>
+          </button>
+
+          <div class="zld-section-title">Cobrança Pix & Indicação</div>
+
+          <div class="zld-grid-2">
+            <button class="zld-script-btn pix-btn" data-action="msg6_pix_presencial">
+              <div class="btn-top">
+                <span>💰 Pix R$ 50</span>
+              </div>
+              <div class="btn-preview">Presencial Zona Leste</div>
+            </button>
+
+            <button class="zld-script-btn pix-btn" data-action="msg6_pix_online">
+              <div class="btn-top">
+                <span>💰 Pix R$ 30</span>
+              </div>
+              <div class="btn-preview">Atendimento Online</div>
+            </button>
+          </div>
         </div>
-      </div>
+
+        <div class="zld-sidebar-footer">
+          <small>Clique em qualquer etapa para preencher na conversa.</small>
+        </div>
+      </aside>
     `;
 
     document.body.appendChild(root);
 
-    // Eventos de clique
-    const toggleBtn = document.getElementById('zerolag-toggle-btn');
-    const panel = document.getElementById('zerolag-panel');
-    const closeBtn = document.getElementById('zld-close-btn');
+    const handleBtn = document.getElementById('zerolag-handle-btn');
+    const collapseBtn = document.getElementById('zld-collapse-btn');
+    const arrow = handleBtn.querySelector('.handle-arrow');
 
-    toggleBtn.addEventListener('click', () => {
-      panel.classList.toggle('zld-hidden');
-    });
+    // Função para alternar expansão/encolhimento
+    function toggleSidebar(open) {
+      const isOpen = typeof open === 'boolean' ? open : !document.body.classList.contains('zld-sidebar-open');
+      
+      if (isOpen) {
+        document.body.classList.add('zld-sidebar-open');
+        arrow.textContent = '▶';
+        handleBtn.title = "Recolher Painel ZeroLag";
+      } else {
+        document.body.classList.remove('zld-sidebar-open');
+        arrow.textContent = '◀';
+        handleBtn.title = "Expandir Painel ZeroLag";
+      }
 
-    closeBtn.addEventListener('click', () => {
-      panel.classList.add('zld-hidden');
-    });
+      // Lembrar preferência no storage
+      if (chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({ zld_sidebar_open: isOpen });
+      }
+    }
 
-    // Ações dos botões
-    panel.addEventListener('click', (e) => {
-      const btn = e.target.closest('.zld-btn');
+    handleBtn.addEventListener('click', () => toggleSidebar());
+    collapseBtn.addEventListener('click', () => toggleSidebar(false));
+
+    // Carregar estado salvo (padrão: aberto)
+    if (chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get(['zld_sidebar_open'], (res) => {
+        const shouldOpen = res.zld_sidebar_open !== undefined ? res.zld_sidebar_open : true;
+        toggleSidebar(shouldOpen);
+      });
+    } else {
+      toggleSidebar(true);
+    }
+
+    // Ações dos botões de preenchimento
+    root.addEventListener('click', (e) => {
+      const btn = e.target.closest('.zld-script-btn');
       if (!btn) return;
 
       const action = btn.getAttribute('data-action');
@@ -259,11 +317,11 @@ Segue os dados para o Pix:
     });
   }
 
-  // Monitorar carregamento do WhatsApp Web
+  // Iniciar assim que o WhatsApp Web estiver pronto
   const interval = setInterval(() => {
     if (document.querySelector('#app') || document.querySelector('#main')) {
       clearInterval(interval);
-      createFloatingPanel();
+      createSidebar();
     }
   }, 1000);
 })();
