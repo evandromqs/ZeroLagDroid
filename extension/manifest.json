@@ -11,7 +11,7 @@
   "content_scripts": [
     {
       "matches": ["https://web.whatsapp.com/*"],
-      "js": ["content.js"],
+      "js": ["qrcode.js", "content.js"],
       "css": ["styles.css"],
       "run_at": "document_idle"
     }

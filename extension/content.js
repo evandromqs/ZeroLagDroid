@@ -1,12 +1,12 @@
 /**
  * ZeroLagDroid - WhatsApp Web Fast Response Extension
  * Barra lateral retrátil acoplada ao canto direito, comprimindo o WhatsApp.
- * Versão 1.3:
- * - Cabeçalho minimalista sem botão 'X' (retração controlada pelo botão lateral nativo)
- * - Modal popup de Ajustes FLUTUANTE e CENTRALIZADO direto no WhatsApp Web
- * - Suporte a largura configurável e modo sobreposição (overlay)
- * - Textos, preços, chaves Pix e velocidades 100% editáveis no popup
- * - Fluxo automatizado de digitação rápida simulada com auto-envio
+ * Versão 1.4:
+ * - Personalização Automática com o Nome do Contato ("Olá, Marcos, tudo bem?")
+ * - Modo de envio flexível: Enviar como TEXTO ou como ÁUDIO gravado (PTT nativo)
+ * - Gravador de voz embutido no modal de ajustes com teleprompter
+ * - Gerador de QR Code Pix oficial (EMV Banco Central) enviado direto no chat
+ * - Cabeçalho minimalista integrado ao WhatsApp (59px)
  */
 
 (function () {
@@ -17,6 +17,7 @@
     pixKey: "11976920649",
     userName: "Evandro Marques",
     neighborhood: "Zona Leste (SP)",
+    city: "SAO PAULO",
     pricePresencial: "50",
     priceOnline: "30",
     sidebarWidth: "330",
@@ -31,7 +32,7 @@
   // Textos padrões
   const defaultFlows = {
     msg1: [
-      "Olá, tudo bem? Vi sua mensagem aqui!",
+      "Olá{NAME_SUFFIX}, tudo bem? Vi sua mensagem aqui!",
       "Qual é o modelo do seu celular e quais aplicativos você mais utiliza no dia a dia? (Uber, 99 ou iFood?)"
     ],
     msg2: [
@@ -71,7 +72,197 @@
     ]
   };
 
-  // Aplicar variáveis de estilo ao DOM
+  // Utilitário de pausa
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  // ============================================================
+  // 1. Armazenamento de Áudios Gravados (IndexedDB)
+  // ============================================================
+  const AudioStorage = {
+    dbPromise: null,
+    async getDB() {
+      if (this.dbPromise) return this.dbPromise;
+      this.dbPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open('ZeroLagAudioDB', 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('audios')) {
+            db.createObjectStore('audios', { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      return this.dbPromise;
+    },
+    async save(id, blob, duration) {
+      const db = await this.getDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('audios', 'readwrite');
+        tx.objectStore('audios').put({ id, blob, duration, updatedAt: Date.now() });
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+      });
+    },
+    async get(id) {
+      const db = await this.getDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction('audios', 'readonly');
+        const req = tx.objectStore('audios').get(id);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      });
+    },
+    async delete(id) {
+      const db = await this.getDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction('audios', 'readwrite');
+        tx.objectStore('audios').delete(id);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      });
+    }
+  };
+
+  // ============================================================
+  // 2. Detecção Automática do Primeiro Nome do Contato
+  // ============================================================
+  function getContactFirstName() {
+    const header = document.querySelector('#main header');
+    if (!header) return "";
+
+    const nameEl =
+      header.querySelector('div[role="button"] span[dir="auto"]') ||
+      header.querySelector('span[dir="auto"]') ||
+      header.querySelector('[data-testid="conversation-info-header-chat-title"]');
+
+    if (!nameEl) return "";
+
+    const raw = (nameEl.getAttribute('title') || nameEl.textContent || "").trim();
+    if (!raw) return "";
+
+    // Se for apenas número de telefone (+55 11 9..., etc.), não usar
+    const digitsOnly = raw.replace(/\D/g, '');
+    if (digitsOnly.length >= 8 && raw.replace(/[+\s\-()0-9]/g, '').length === 0) {
+      return "";
+    }
+
+    // Extrair primeira palavra
+    const firstWord = raw.split(/\s+/)[0];
+    const cleanName = firstWord.replace(/[^\p{L}]/gu, '');
+
+    if (cleanName.length >= 2 && cleanName.length <= 25) {
+      return cleanName.charAt(0).toUpperCase() + cleanName.slice(1).toLowerCase();
+    }
+
+    return "";
+  }
+
+  // ============================================================
+  // 3. Gerador Oficial de Código Pix (EMV / Banco Central do Brasil)
+  // ============================================================
+  function formatEMV(id, value) {
+    const len = String(value.length).padStart(2, '0');
+    return `${id}${len}${value}`;
+  }
+
+  function calculateCRC16(payload) {
+    let crc = 0xffff;
+    for (let i = 0; i < payload.length; i++) {
+      crc ^= payload.charCodeAt(i) << 8;
+      for (let j = 0; j < 8; j++) {
+        if ((crc & 0x8000) !== 0) {
+          crc = ((crc << 1) ^ 0x1021) & 0xffff;
+        } else {
+          crc = (crc << 1) & 0xffff;
+        }
+      }
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
+  }
+
+  function generatePixPayload({ key, name, city, amount, txid = "***" }) {
+    const cleanName = (name || "EVANDRO MARQUES")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase()
+      .slice(0, 25);
+    const cleanCity = (city || "SAO PAULO")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase()
+      .slice(0, 15);
+    const cleanAmount = parseFloat(amount || 0).toFixed(2);
+
+    const gui = formatEMV("00", "br.gov.bcb.pix");
+    const pixKey = formatEMV("01", key.trim());
+    const accountInfo = formatEMV("26", gui + pixKey);
+
+    const payload =
+      formatEMV("00", "01") +
+      accountInfo +
+      formatEMV("52", "0000") +
+      formatEMV("53", "986") +
+      formatEMV("54", cleanAmount) +
+      formatEMV("58", "BR") +
+      formatEMV("59", cleanName) +
+      formatEMV("60", cleanCity) +
+      formatEMV("62", formatEMV("05", txid)) +
+      "6304";
+
+    const crc = calculateCRC16(payload);
+    return payload + crc;
+  }
+
+  // Enviar arquivo (Imagem QR Code ou Áudio OGG/MP3) no chat do WhatsApp
+  async function pasteFileToWhatsApp(file) {
+    const inputField = getChatInput();
+    if (!inputField) {
+      alert("⚠️ Abra uma conversa no WhatsApp Web primeiro!");
+      return false;
+    }
+
+    inputField.focus();
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+
+    const chatContainer = document.querySelector('#main footer') || document.querySelector('#main') || inputField;
+    const pasteEvent = new ClipboardEvent('paste', {
+      clipboardData: dataTransfer,
+      bubbles: true,
+      cancelable: true
+    });
+    chatContainer.dispatchEvent(pasteEvent);
+
+    // Aguardar o modal nativo de envio de mídia do WhatsApp abrir
+    let sendBtn = null;
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await sleep(200);
+      sendBtn =
+        document.querySelector('div[aria-label="Enviar"]') ||
+        document.querySelector('button[aria-label="Enviar"]') ||
+        document.querySelector('span[data-icon="send"]')?.closest('button') ||
+        document.querySelector('span[data-icon="send"]')?.closest('div[role="button"]');
+
+      if (sendBtn && sendBtn.offsetParent !== null) {
+        break;
+      }
+    }
+
+    if (sendBtn) {
+      await sleep(300);
+      sendBtn.click();
+      await sleep(600);
+      return true;
+    }
+
+    return false;
+  }
+
+  // ============================================================
+  // 4. Configurações e Layout
+  // ============================================================
   function applyLayoutSettings() {
     const width = config.sidebarWidth || "330";
     document.documentElement.style.setProperty('--zld-sidebar-width', `${width}px`);
@@ -82,18 +273,15 @@
       document.body.classList.remove('zld-mode-overlay');
     }
 
-    // Atualizar preços na barra
     const presencialEl = document.querySelector('.price-chip.presencial b');
     if (presencialEl) presencialEl.textContent = `R$ ${config.pricePresencial || '50'}`;
 
     const onlineEl = document.querySelector('.price-chip.online b');
     if (onlineEl) onlineEl.textContent = `R$ ${config.priceOnline || '30'}`;
 
-    // Disparar redimensionamento para o WhatsApp reajustar layout sem cortes
     window.dispatchEvent(new Event('resize'));
   }
 
-  // Carregar dados salvos
   function loadSettings() {
     if (chrome.storage && chrome.storage.sync) {
       chrome.storage.sync.get(null, (res) => {
@@ -105,7 +293,6 @@
     }
   }
 
-  // Ouvir alterações de configurações em tempo real
   if (chrome.storage && chrome.storage.onChanged) {
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area === 'sync' || area === 'local') {
@@ -169,9 +356,14 @@
       ];
     }
 
-    // Aplicar substituição de variáveis
+    // Personalização dinâmica com o primeiro nome do cliente aberto
+    const contactName = getContactFirstName();
+    const nameSuffix = contactName ? `, ${contactName}` : "";
+
     return list.map((msg) =>
       msg
+        .replace(/\{NAME_SUFFIX\}/g, nameSuffix)
+        .replace(/\{NOME\}/g, contactName || "")
         .replace(/\{PIX_KEY\}/g, config.pixKey || "11976920649")
         .replace(/\{USER_NAME\}/g, config.userName || "Evandro Marques")
         .replace(/\{PRICE_PRESENCIAL\}/g, config.pricePresencial || "50")
@@ -179,9 +371,6 @@
         .replace(/\{NEIGHBORHOOD\}/g, config.neighborhood || "Zona Leste (SP)")
     );
   }
-
-  // Utilitário de pausa
-  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   // Localizar campo de digitação do WhatsApp Web
   function getChatInput() {
@@ -210,11 +399,9 @@
   async function typeMessageIntoWhatsApp(input, text, isAborted) {
     input.focus();
 
-    // Limpar rascunho anterior
     document.execCommand('selectAll', false, null);
     document.execCommand('delete', false, null);
 
-    // Modo instantâneo: insere direto
     if (config.typingSpeed === 'instant') {
       document.execCommand('insertText', false, text);
       input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -286,7 +473,9 @@
     return true;
   }
 
-  // Controle de fluxo
+  // ============================================================
+  // 5. Execução de Fluxo de Texto
+  // ============================================================
   let currentFlow = null;
 
   async function executeFlow(action, btn) {
@@ -393,14 +582,129 @@
     }
   }
 
-  // Criação da Barra Lateral e Modal Centralizado
+  // ============================================================
+  // 6. Envio de Áudio Pré-Gravado (PTT / Nota de Voz)
+  // ============================================================
+  async function sendAudioStep(action, btn) {
+    const audioData = await AudioStorage.get(action);
+    if (!audioData || !audioData.blob) {
+      const wantRecord = confirm(
+        "🎙️ Você ainda não gravou o áudio para esta etapa!\n\nDeseja abrir a Central de Ajustes para gravar sua voz agora?"
+      );
+      if (wantRecord) {
+        openModal('tab-m-audio');
+      }
+      return;
+    }
+
+    const originalHTML = btn.innerHTML;
+    btn.classList.add('is-active-flow');
+    btn.innerHTML = `
+      <div class="btn-top">
+        <span class="step-num">🎙️</span>
+        <span class="step-label">Anexando Áudio...</span>
+      </div>
+      <div class="zld-flow-status">
+        <div class="zld-pulse-dot"></div>
+        <span>Enviando áudio gravado (${audioData.duration || ''}s)...</span>
+      </div>
+    `;
+
+    try {
+      const ext = audioData.blob.type.includes('mp3') ? 'mp3' : 'ogg';
+      const audioFile = new File([audioData.blob], `zerolag_${action}.${ext}`, {
+        type: audioData.blob.type || 'audio/ogg'
+      });
+
+      const success = await pasteFileToWhatsApp(audioFile);
+      if (success) {
+        btn.classList.remove('is-active-flow');
+        btn.classList.add('is-success');
+        btn.innerHTML = `
+          <div class="btn-top">
+            <span class="step-num">✓</span>
+            <span class="step-label" style="color:var(--wa-teal)">Áudio Enviado!</span>
+          </div>
+          <div class="zld-flow-status" style="color:var(--wa-teal)">
+            <span>Áudio entregue na conversa</span>
+          </div>
+        `;
+        await sleep(2000);
+      } else {
+        alert("⚠️ Não foi possível anexar o áudio. Verifique se o chat está aberto.");
+      }
+    } catch (err) {
+      console.error("Erro ao enviar áudio:", err);
+    } finally {
+      btn.classList.remove('is-active-flow', 'is-success');
+      btn.innerHTML = originalHTML;
+    }
+  }
+
+  // ============================================================
+  // 7. Envio do QR Code Pix Direto no Chat
+  // ============================================================
+  async function sendPixQRCode(amount, btn) {
+    if (!window.ZeroLagQR || !window.ZeroLagQR.generatePixCardCanvas) {
+      alert("⚠️ Gerador de QR Code indisponível. Recarregue a página.");
+      return;
+    }
+
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = `⏳ Gerando QR Code...`;
+
+    try {
+      const payload = generatePixPayload({
+        key: config.pixKey || "11976920649",
+        name: config.userName || "EVANDRO MARQUES",
+        city: config.city || "SAO PAULO",
+        amount: String(amount)
+      });
+
+      const cardCanvas = window.ZeroLagQR.generatePixCardCanvas({
+        payload: payload,
+        valor: `${amount},00`,
+        nome: config.userName || "Evandro Marques",
+        chavePix: config.pixKey || "11976920649"
+      });
+
+      cardCanvas.toBlob(async (blob) => {
+        const file = new File([blob], `pix_${amount}_zerolagdroid.png`, { type: 'image/png' });
+        btn.innerHTML = `🚀 Enviando QR Code...`;
+
+        const sent = await pasteFileToWhatsApp(file);
+        if (sent) {
+          // Após enviar a imagem do QR Code, envia a chave Copia e Cola como texto
+          await sleep(600);
+          const input = getChatInput();
+          if (input) {
+            const copiaColaMsg = `💰 Pix Copia e Cola (R$ ${amount},00):\n${payload}`;
+            await typeMessageIntoWhatsApp(input, copiaColaMsg, () => false);
+            await sendCurrentMessage(input, () => false);
+          }
+          btn.innerHTML = `✅ QR Code Enviado!`;
+          await sleep(1800);
+        } else {
+          alert("Não foi possível enviar a imagem do QR Code. O chat está aberto?");
+        }
+        btn.innerHTML = originalHTML;
+      }, 'image/png');
+    } catch (err) {
+      console.error("Erro ao gerar QR Code:", err);
+      btn.innerHTML = originalHTML;
+    }
+  }
+
+  // ============================================================
+  // 8. Criação da Barra Lateral e Modal Centralizado
+  // ============================================================
   function createSidebar() {
     if (document.getElementById('zerolag-sidebar-root')) return;
 
     const root = document.createElement('div');
     root.id = 'zerolag-sidebar-root';
     root.innerHTML = `
-      <!-- Botão Centralizado na Direita (Sempre Visível) -->
+      <!-- Botão Retrátil Lateral Nativo -->
       <button id="zerolag-handle-btn" title="Expandir/Recolher Painel ZeroLag">
         <span class="handle-arrow">◀</span>
         <span class="handle-badge">🚀 ZeroLag</span>
@@ -408,7 +712,7 @@
 
       <!-- Barra Lateral -->
       <aside id="zerolag-sidebar">
-        <!-- Cabeçalho Otimizado (sem botão X) -->
+        <!-- Cabeçalho Otimizado Idêntico ao WhatsApp (59px) -->
         <div class="zld-sidebar-header">
           <div class="zld-header-left">
             <div class="zld-avatar">🚀</div>
@@ -436,79 +740,123 @@
         </div>
 
         <div class="zld-content-scroll">
-          <div class="zld-section-title">Fluxos de Conversa (Até 3 msgs)</div>
+          <div class="zld-section-title">Fluxos de Atendimento (Texto ou Áudio)</div>
 
-          <button class="zld-script-btn" data-action="msg1">
+          <!-- Etapa 1 -->
+          <div class="zld-script-btn" data-action="msg1">
             <div class="btn-top">
-              <span class="step-num">1</span>
-              <span class="step-label">Boas-Vindas & Modelo</span>
-            </div>
-            <div class="btn-preview">2 msgs: Saudação + Pergunta modelo e apps</div>
-          </button>
-
-          <button class="zld-script-btn highlight" data-action="msg2">
-            <div class="btn-top">
-              <span class="step-num">2</span>
-              <span class="step-label">Explicação, Garantia & Preços</span>
-            </div>
-            <div class="btn-preview">3 msgs: Como funciona + Valores + Garantia</div>
-          </button>
-
-          <div class="zld-grid-2">
-            <button class="zld-script-btn" data-action="msg3_presencial">
-              <div class="btn-top">
-                <span class="step-num">3A</span>
-                <span class="step-label">Presencial ZL</span>
+              <div class="btn-top-left">
+                <span class="step-num">1</span>
+                <span class="step-label">Boas-Vindas & Modelo</span>
               </div>
-              <div class="btn-preview">3 msgs: Posto/ponto ZL</div>
-            </button>
-
-            <button class="zld-script-btn" data-action="msg3_online">
-              <div class="btn-top">
-                <span class="step-num">3B</span>
-                <span class="step-label">Remoto (PC)</span>
+              <div class="zld-dual-actions">
+                <button class="zld-action-pill text-action" data-mode="text" title="Digitar Texto">💬 Texto</button>
+                <button class="zld-action-pill audio audio-action" data-mode="audio" title="Enviar Áudio Gravado">🎙️ Áudio</button>
               </div>
-              <div class="btn-preview">3 msgs: AnyDesk + USB</div>
-            </button>
+            </div>
+            <div class="btn-preview">Saudação personalizada com nome + pergunta modelo</div>
           </div>
 
-          <button class="zld-script-btn" data-action="msg4_usb">
+          <!-- Etapa 2 -->
+          <div class="zld-script-btn highlight" data-action="msg2">
             <div class="btn-top">
-              <span class="step-num">4</span>
-              <span class="step-label">Como Ativar Depuração USB</span>
+              <div class="btn-top-left">
+                <span class="step-num">2</span>
+                <span class="step-label">Explicação, Garantia & Preços</span>
+              </div>
+              <div class="zld-dual-actions">
+                <button class="zld-action-pill text-action" data-mode="text" title="Digitar Texto">💬 Texto</button>
+                <button class="zld-action-pill audio audio-action" data-mode="audio" title="Enviar Áudio Gravado">🎙️ Áudio</button>
+              </div>
+            </div>
+            <div class="btn-preview">Como funciona + R$ 50 ZL / R$ 30 Online + Garantia</div>
+          </div>
+
+          <!-- Etapa 3A e 3B -->
+          <div class="zld-grid-2">
+            <div class="zld-script-btn" data-action="msg3_presencial">
+              <div class="btn-top">
+                <div class="btn-top-left">
+                  <span class="step-num">3A</span>
+                  <span class="step-label">Presencial ZL</span>
+                </div>
+                <button class="zld-action-pill audio audio-action" data-mode="audio" title="Enviar Áudio">🎙️</button>
+              </div>
+              <div class="btn-preview">Posto/ponto ZL</div>
+            </div>
+
+            <div class="zld-script-btn" data-action="msg3_online">
+              <div class="btn-top">
+                <div class="btn-top-left">
+                  <span class="step-num">3B</span>
+                  <span class="step-label">Remoto PC</span>
+                </div>
+                <button class="zld-action-pill audio audio-action" data-mode="audio" title="Enviar Áudio">🎙️</button>
+              </div>
+              <div class="btn-preview">AnyDesk + USB</div>
+            </div>
+          </div>
+
+          <!-- Etapa 4 -->
+          <div class="zld-script-btn" data-action="msg4_usb">
+            <div class="btn-top">
+              <div class="btn-top-left">
+                <span class="step-num">4</span>
+                <span class="step-label">Ativar Depuração USB</span>
+              </div>
+              <div class="zld-dual-actions">
+                <button class="zld-action-pill text-action" data-mode="text" title="Digitar Texto">💬 Texto</button>
+                <button class="zld-action-pill audio audio-action" data-mode="audio" title="Enviar Áudio">🎙️ Áudio</button>
+              </div>
             </div>
             <div class="btn-preview">Passo a passo com 7 toques + autorização</div>
-          </button>
+          </div>
 
-          <button class="zld-script-btn" data-action="msg5_teste">
+          <!-- Etapa 5 -->
+          <div class="zld-script-btn" data-action="msg5_teste">
             <div class="btn-top">
-              <span class="step-num">5</span>
-              <span class="step-label">Teste Pós-Otimização</span>
+              <div class="btn-top-left">
+                <span class="step-num">5</span>
+                <span class="step-label">Teste Pós-Otimização</span>
+              </div>
+              <div class="zld-dual-actions">
+                <button class="zld-action-pill text-action" data-mode="text" title="Digitar Texto">💬 Texto</button>
+                <button class="zld-action-pill audio audio-action" data-mode="audio" title="Enviar Áudio">🎙️ Áudio</button>
+              </div>
             </div>
-            <div class="btn-preview">3 msgs: Reiniciado + pedir teste Uber/99/Maps</div>
-          </button>
+            <div class="btn-preview">Reiniciado + testar Uber/99/Maps</div>
+          </div>
 
-          <div class="zld-section-title">Cobrança Pix & Indicação</div>
+          <!-- Seção de Cobrança Pix -->
+          <div class="zld-section-title">Cobrança Pix & QR Code</div>
 
           <div class="zld-grid-2">
-            <button class="zld-script-btn pix-btn" data-action="msg6_pix_presencial">
+            <!-- Pix R$ 50 -->
+            <div class="zld-script-btn pix-btn" data-action="msg6_pix_presencial">
               <div class="btn-top">
-                <span>💰 Pix R$ ${config.pricePresencial || '50'}</span>
+                <span style="font-weight: 700;">💰 Presencial R$ 50</span>
               </div>
-              <div class="btn-preview">3 msgs: Pix Presencial</div>
-            </button>
+              <div class="zld-pix-actions">
+                <button class="zld-pix-subbtn" data-pix-type="text" data-amount="50">💬 Texto</button>
+                <button class="zld-pix-subbtn" data-pix-type="qr" data-amount="50">📷 QR Code</button>
+              </div>
+            </div>
 
-            <button class="zld-script-btn pix-btn" data-action="msg6_pix_online">
+            <!-- Pix R$ 30 -->
+            <div class="zld-script-btn pix-btn" data-action="msg6_pix_online">
               <div class="btn-top">
-                <span>💰 Pix R$ ${config.priceOnline || '30'}</span>
+                <span style="font-weight: 700;">💰 Remoto R$ 30</span>
               </div>
-              <div class="btn-preview">3 msgs: Pix Remoto</div>
-            </button>
+              <div class="zld-pix-actions">
+                <button class="zld-pix-subbtn" data-pix-type="text" data-amount="30">💬 Texto</button>
+                <button class="zld-pix-subbtn" data-pix-type="qr" data-amount="30">📷 QR Code</button>
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="zld-sidebar-footer">
-          <small>Clique para iniciar o fluxo. Clique novamente para parar.</small>
+          <small>Clique no texto ou no microfone para enviar no formato desejado.</small>
         </div>
       </aside>
 
@@ -525,6 +873,7 @@
 
           <div class="zld-modal-tabs">
             <button class="zld-modal-tab-btn active" data-tab="tab-m-pix">💰 Pix & Valores</button>
+            <button class="zld-modal-tab-btn" data-tab="tab-m-audio">🎙️ Gravar Áudios</button>
             <button class="zld-modal-tab-btn" data-tab="tab-m-layout">🖥️ Layout da Barra</button>
             <button class="zld-modal-tab-btn" data-tab="tab-m-speed">⚡ Digitação</button>
             <button class="zld-modal-tab-btn" data-tab="tab-m-scripts">📝 Roteiro das Mensagens</button>
@@ -534,16 +883,20 @@
             <!-- Aba 1: Pix & Valores -->
             <div id="tab-m-pix" class="zld-modal-tab-content">
               <div class="zld-card-section">
-                <div class="zld-card-section-title">Dados de Recebimento Pix</div>
+                <div class="zld-card-section-title">Dados de Recebimento Pix & QR Code</div>
                 <div class="zld-form-group">
                   <label>Chave Pix:</label>
                   <input type="text" id="m_pixKey" placeholder="Ex: Telefone, CPF ou E-mail">
-                  <div class="zld-help">Substitui automaticamente {PIX_KEY} nas mensagens de cobrança.</div>
+                  <div class="zld-help">Usada para gerar o QR Code oficial do Banco Central e as mensagens de cobrança.</div>
                 </div>
                 <div class="zld-form-group" style="margin-top: 12px;">
                   <label>Nome do Titular:</label>
                   <input type="text" id="m_userName" placeholder="Ex: Evandro Marques">
-                  <div class="zld-help">Substitui {USER_NAME} na confirmação do Pix.</div>
+                  <div class="zld-help">Nome completo exibido no QR Code e no comprovante do Pix.</div>
+                </div>
+                <div class="zld-form-group" style="margin-top: 12px;">
+                  <label>Cidade do Titular (para o QR Code Pix):</label>
+                  <input type="text" id="m_city" value="SAO PAULO">
                 </div>
               </div>
 
@@ -566,7 +919,18 @@
               </div>
             </div>
 
-            <!-- Aba 2: Layout da Barra -->
+            <!-- Aba 2: Gravador de Áudios -->
+            <div id="tab-m-audio" class="zld-modal-tab-content" style="display: none;">
+              <div class="zld-help" style="margin-bottom: 14px; font-size: 12px;">
+                💡 <b>Dica de Ouro:</b> Grave com a sua voz falando de forma descontraída. O áudio será enviado com microfone verde no WhatsApp como se tivesse sido gravado na hora!
+              </div>
+
+              <div id="zld-audio-items-container">
+                <!-- Itens de áudio são gerados dinamicamente via JS -->
+              </div>
+            </div>
+
+            <!-- Aba 3: Layout da Barra -->
             <div id="tab-m-layout" class="zld-modal-tab-content" style="display: none;">
               <div class="zld-card-section">
                 <div class="zld-card-section-title">Dimensões e Comportamento da Barra</div>
@@ -577,7 +941,6 @@
                     <option value="330">330px - Padrão WhatsApp (Recomendado)</option>
                     <option value="360">360px - Confortável</option>
                   </select>
-                  <div class="zld-help">Reduz a largura para caber com folga mesmo em telas de resolução menor.</div>
                 </div>
                 <div class="zld-form-group" style="margin-top: 14px;">
                   <label>Comportamento em Relação ao WhatsApp:</label>
@@ -589,7 +952,7 @@
               </div>
             </div>
 
-            <!-- Aba 3: Digitação -->
+            <!-- Aba 4: Digitação -->
             <div id="tab-m-speed" class="zld-modal-tab-content" style="display: none;">
               <div class="zld-card-section">
                 <div class="zld-card-section-title">Velocidade e Intervalos</div>
@@ -612,13 +975,14 @@
               </div>
             </div>
 
-            <!-- Aba 4: Roteiro das Mensagens -->
+            <!-- Aba 5: Roteiro das Mensagens -->
             <div id="tab-m-scripts" class="zld-modal-tab-content" style="display: none;">
               <div class="zld-card-section">
                 <div class="zld-card-section-title">Etapa 1: Boas-Vindas & Modelo</div>
                 <div class="zld-form-group">
-                  <label>Mensagem 1 (Saudação):</label>
+                  <label>Mensagem 1 (Saudação com nome automático {NAME_SUFFIX}):</label>
                   <textarea id="m_msg1_part1"></textarea>
+                  <div class="zld-help">A tag {NAME_SUFFIX} insere automaticamente ", [PrimeiroNome]" se houver nome na conversa.</div>
                 </div>
                 <div class="zld-form-group" style="margin-top: 8px;">
                   <label>Mensagem 2 (Pergunta de modelo e apps):</label>
@@ -748,7 +1112,6 @@
         chrome.storage.local.set({ zld_sidebar_open: isOpen });
       }
 
-      // Notificar o WhatsApp para recalcular seu layout responsivo sem cortes
       setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
       setTimeout(() => window.dispatchEvent(new Event('resize')), 280);
     }
@@ -764,6 +1127,7 @@
     function populateModalFields() {
       document.getElementById('m_pixKey').value = config.pixKey || "11976920649";
       document.getElementById('m_userName').value = config.userName || "Evandro Marques";
+      document.getElementById('m_city').value = config.city || "SAO PAULO";
       document.getElementById('m_neighborhood').value = config.neighborhood || "Zona Leste (SP)";
       document.getElementById('m_pricePresencial').value = config.pricePresencial || "50";
       document.getElementById('m_priceOnline').value = config.priceOnline || "30";
@@ -797,33 +1161,43 @@
 
       document.getElementById('m_msg6_part1').value = c.msg6_part1 || defaultFlows.msg6_pix_presencial[0];
       document.getElementById('m_msg6_part3').value = c.msg6_part3 || defaultFlows.msg6_pix_presencial[2];
+
+      renderAudioRecordingItems();
     }
 
-    function openModal() {
+    function openModal(defaultTabId) {
       populateModalFields();
+      if (defaultTabId) {
+        modalOverlay.querySelectorAll('.zld-modal-tab-btn').forEach((b) => b.classList.remove('active'));
+        modalOverlay.querySelectorAll('.zld-modal-tab-content').forEach((c) => (c.style.display = 'none'));
+        const tabBtn = modalOverlay.querySelector(`[data-tab="${defaultTabId}"]`);
+        if (tabBtn) tabBtn.classList.add('active');
+        const tabContent = document.getElementById(defaultTabId);
+        if (tabContent) tabContent.style.display = 'block';
+      }
       modalOverlay.style.display = 'flex';
     }
 
     function closeModal() {
       modalOverlay.style.display = 'none';
+      if (activeMediaRecorder && activeMediaRecorder.state !== 'inactive') {
+        activeMediaRecorder.stop();
+      }
     }
 
-    if (settingsBtn) settingsBtn.addEventListener('click', openModal);
+    if (settingsBtn) settingsBtn.addEventListener('click', () => openModal());
     if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeModal);
 
-    // Fechar ao clicar fora do modal
     modalOverlay.addEventListener('click', (e) => {
       if (e.target === modalOverlay) closeModal();
     });
 
-    // Fechar com tecla ESC
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && modalOverlay.style.display === 'flex') {
         closeModal();
       }
     });
 
-    // Abas do Modal
     modalOverlay.querySelectorAll('.zld-modal-tab-btn').forEach((tabBtn) => {
       tabBtn.addEventListener('click', () => {
         modalOverlay.querySelectorAll('.zld-modal-tab-btn').forEach((b) => b.classList.remove('active'));
@@ -835,6 +1209,135 @@
         if (targetEl) targetEl.style.display = 'block';
       });
     });
+
+    // ============================================================
+    // Gerenciador do Gravador de Áudios (com microfone)
+    // ============================================================
+    let activeMediaRecorder = null;
+    let activeStream = null;
+    let activeInterval = null;
+
+    const audioStepsList = [
+      { id: 'msg1', title: 'Etapa 1: Boas-Vindas & Modelo', script: 'Olá parceiro, tudo bem? Vi sua mensagem aqui! Me fala qual modelo do seu celular e quais apps você mais roda no dia a dia? Uber, 99 ou iFood?' },
+      { id: 'msg2', title: 'Etapa 2: Explicação & Valores', script: 'Esse aparelho é excelente! O que pesa nele são os processos de fábrica acumulados em segundo plano. Pelo computador eu tiro todo esse peso, libero memória RAM e blindo os apps de corrida sem formatar nada. Fica R$ 50 presencial na ZL ou R$ 30 remoto, e você só paga depois que testar e aprovar!' },
+      { id: 'msg3_presencial', title: 'Etapa 3A: Presencial ZL', script: 'Sobre o presencial, eu atendo na Zona Leste de SP. Marcamos num shopping, posto ou ponto de apoio. Levo o notebook e em 10 minutos entrego pronto. Qual bairro fica melhor pra você?' },
+      { id: 'msg3_online', title: 'Etapa 3B: Remoto (PC / Online)', script: 'Pro atendimento remoto de R$ 30, você só precisa de um computador com internet. Plugamos o celular no cabo USB e faço tudo à distância pelo AnyDesk na sua tela. Você tem PC aí agora?' },
+      { id: 'msg4_usb', title: 'Etapa 4: Depuração USB', script: 'Pra conectar, vai em Configurações > Sobre o telefone > Informações do software e clica 7 vezes em Número de compilação. Depois abre Opções do desenvolvedor, ativa Depuração USB e conecta o cabo no PC marcando sempre permitir.' },
+      { id: 'msg5_teste', title: 'Etapa 5: Teste Pós-Otimização', script: 'Prontinho parceiro! Aparelho 100% otimizado e reiniciado. Abre a Uber, a 99 e o Maps aí agora pra sentir a fluidez. Ficou bem mais rápido no toque?' }
+    ];
+
+    async function renderAudioRecordingItems() {
+      const container = document.getElementById('zld-audio-items-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      for (const item of audioStepsList) {
+        const audioData = await AudioStorage.get(item.id);
+        const hasAudio = !!audioData && !!audioData.blob;
+
+        const card = document.createElement('div');
+        card.className = 'zld-audio-item';
+        card.innerHTML = `
+          <div class="zld-audio-item-header">
+            <span class="zld-audio-title">${item.title}</span>
+            <span class="zld-audio-status ${hasAudio ? 'has-audio' : ''}" id="status_${item.id}">
+              ${hasAudio ? `✅ Gravado (${audioData.duration || ''}s)` : '⚪ Nenhum áudio'}
+            </span>
+          </div>
+          <div class="zld-audio-script">"${item.script}"</div>
+          <div class="zld-audio-controls">
+            <button class="zld-audio-btn record" id="rec_btn_${item.id}">🔴 Gravar Voz</button>
+            <button class="zld-audio-btn stop" id="stop_btn_${item.id}" style="display:none;">⏹️ Parar Gravação</button>
+            <button class="zld-audio-btn play" id="play_btn_${item.id}" style="${hasAudio ? '' : 'display:none;'}">▶️ Ouvir</button>
+            <button class="zld-audio-btn delete" id="del_btn_${item.id}" style="${hasAudio ? '' : 'display:none;'}" title="Excluir áudio">🗑️</button>
+          </div>
+        `;
+
+        container.appendChild(card);
+
+        const recBtn = card.querySelector(`#rec_btn_${item.id}`);
+        const stopBtn = card.querySelector(`#stop_btn_${item.id}`);
+        const playBtn = card.querySelector(`#play_btn_${item.id}`);
+        const delBtn = card.querySelector(`#del_btn_${item.id}`);
+        const statusEl = card.querySelector(`#status_${item.id}`);
+
+        // Iniciar gravação
+        recBtn.addEventListener('click', async () => {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            activeStream = stream;
+            const chunks = [];
+            const recorder = new MediaRecorder(stream);
+            activeMediaRecorder = recorder;
+
+            recorder.ondataavailable = (e) => {
+              if (e.data.size > 0) chunks.push(e.data);
+            };
+
+            let sec = 0;
+            statusEl.textContent = 'Gravando: 00:00 🔴';
+            statusEl.className = 'zld-audio-status';
+            activeInterval = setInterval(() => {
+              sec++;
+              const m = String(Math.floor(sec / 60)).padStart(2, '0');
+              const s = String(sec % 60).padStart(2, '0');
+              statusEl.textContent = `Gravando: ${m}:${s} 🔴`;
+            }, 1000);
+
+            recBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-flex';
+
+            recorder.onstop = async () => {
+              clearInterval(activeInterval);
+              stream.getTracks().forEach((t) => t.stop());
+              const mime = recorder.mimeType || 'audio/ogg; codecs=opus';
+              const blob = new Blob(chunks, { type: mime });
+              await AudioStorage.save(item.id, blob, sec);
+              statusEl.textContent = `✅ Gravado (${sec}s)`;
+              statusEl.className = 'zld-audio-status has-audio';
+              recBtn.style.display = 'inline-flex';
+              recBtn.textContent = '🔄 Regravar';
+              stopBtn.style.display = 'none';
+              playBtn.style.display = 'inline-flex';
+              delBtn.style.display = 'inline-flex';
+            };
+
+            recorder.start();
+          } catch (err) {
+            alert("Não foi possível acessar o microfone: " + err.message);
+          }
+        });
+
+        // Parar gravação
+        stopBtn.addEventListener('click', () => {
+          if (activeMediaRecorder && activeMediaRecorder.state !== 'inactive') {
+            activeMediaRecorder.stop();
+          }
+        });
+
+        // Ouvir áudio gravado
+        playBtn.addEventListener('click', async () => {
+          const currentAudio = await AudioStorage.get(item.id);
+          if (currentAudio && currentAudio.blob) {
+            const audioUrl = URL.createObjectURL(currentAudio.blob);
+            const audio = new Audio(audioUrl);
+            audio.play();
+          }
+        });
+
+        // Excluir áudio gravado
+        delBtn.addEventListener('click', async () => {
+          if (confirm("Deseja excluir a gravação desta etapa?")) {
+            await AudioStorage.delete(item.id);
+            statusEl.textContent = '⚪ Nenhum áudio';
+            statusEl.className = 'zld-audio-status';
+            recBtn.textContent = '🔴 Gravar Voz';
+            playBtn.style.display = 'none';
+            delBtn.style.display = 'none';
+          }
+        });
+      }
+    }
 
     // Salvar no Modal
     if (modalSaveBtn) {
@@ -863,6 +1366,7 @@
         const newSettings = {
           pixKey: document.getElementById('m_pixKey').value.trim(),
           userName: document.getElementById('m_userName').value.trim(),
+          city: document.getElementById('m_city').value.trim() || "SAO PAULO",
           neighborhood: document.getElementById('m_neighborhood').value.trim(),
           pricePresencial: document.getElementById('m_pricePresencial').value.trim() || "50",
           priceOnline: document.getElementById('m_priceOnline').value.trim() || "30",
@@ -923,8 +1427,48 @@
       toggleSidebar(true);
     }
 
-    // Clique em botão de script
+    // Cliques nos botões de scripts (Texto, Áudio e Pix QR Code)
     root.addEventListener('click', (e) => {
+      // 1. Botão de QR Code Pix
+      const pixSubBtn = e.target.closest('.zld-pix-subbtn');
+      if (pixSubBtn) {
+        e.stopPropagation();
+        const type = pixSubBtn.getAttribute('data-pix-type');
+        const amount = pixSubBtn.getAttribute('data-amount');
+        if (type === 'qr') {
+          sendPixQRCode(amount, pixSubBtn);
+        } else {
+          const action = amount === '50' ? 'msg6_pix_presencial' : 'msg6_pix_online';
+          executeFlow(action, pixSubBtn);
+        }
+        return;
+      }
+
+      // 2. Botão de Envio de Áudio
+      const audioActionBtn = e.target.closest('.audio-action');
+      if (audioActionBtn) {
+        e.stopPropagation();
+        const card = audioActionBtn.closest('.zld-script-btn');
+        const action = card ? card.getAttribute('data-action') : null;
+        if (action) {
+          sendAudioStep(action, card);
+        }
+        return;
+      }
+
+      // 3. Botão de Envio de Texto
+      const textActionBtn = e.target.closest('.text-action');
+      if (textActionBtn) {
+        e.stopPropagation();
+        const card = textActionBtn.closest('.zld-script-btn');
+        const action = card ? card.getAttribute('data-action') : null;
+        if (action) {
+          executeFlow(action, card);
+        }
+        return;
+      }
+
+      // 4. Clique geral no card
       const btn = e.target.closest('.zld-script-btn');
       if (!btn) return;
 
