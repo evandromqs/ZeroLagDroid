@@ -743,114 +743,134 @@
           <div class="zld-section-title">Fluxos de Atendimento (Texto ou Áudio)</div>
 
           <!-- Etapa 1 -->
-          <div class="zld-script-btn" data-action="msg1">
-            <div class="btn-top">
-              <div class="btn-top-left">
-                <span class="step-num">1</span>
-                <span class="step-label">Boas-Vindas & Modelo</span>
-              </div>
-              <div class="zld-dual-actions">
-                <button class="zld-action-pill text-action" data-mode="text" title="Digitar Texto">💬 Texto</button>
-                <button class="zld-action-pill audio audio-action" data-mode="audio" title="Enviar Áudio Gravado">🎙️ Áudio</button>
-              </div>
+          <div class="zld-card" data-action="msg1">
+            <div class="zld-card-top">
+              <span class="step-num">1</span>
+              <span class="zld-card-title">Boas-Vindas & Modelo</span>
             </div>
-            <div class="btn-preview">Saudação personalizada com nome + pergunta modelo</div>
+            <div class="zld-card-desc">Saudação com nome automático do cliente + modelo do celular</div>
+            <div class="zld-card-actions">
+              <button class="zld-btn-send text-action" data-mode="text" title="Digitar Texto">
+                <span>💬 Enviar Texto</span>
+              </button>
+              <button class="zld-btn-send audio audio-action" data-mode="audio" title="Enviar Áudio Gravado">
+                <span>🎙️ Áudio</span>
+              </button>
+            </div>
           </div>
 
           <!-- Etapa 2 -->
-          <div class="zld-script-btn highlight" data-action="msg2">
-            <div class="btn-top">
-              <div class="btn-top-left">
-                <span class="step-num">2</span>
-                <span class="step-label">Explicação, Garantia & Preços</span>
-              </div>
-              <div class="zld-dual-actions">
-                <button class="zld-action-pill text-action" data-mode="text" title="Digitar Texto">💬 Texto</button>
-                <button class="zld-action-pill audio audio-action" data-mode="audio" title="Enviar Áudio Gravado">🎙️ Áudio</button>
-              </div>
+          <div class="zld-card highlight" data-action="msg2">
+            <div class="zld-card-top">
+              <span class="step-num">2</span>
+              <span class="zld-card-title">Explicação, Garantia & Preços</span>
             </div>
-            <div class="btn-preview">Como funciona + R$ 50 ZL / R$ 30 Online + Garantia</div>
+            <div class="zld-card-desc">Como funciona + R$ 50 ZL / R$ 30 Online + Garantia de pagamento pós-teste</div>
+            <div class="zld-card-actions">
+              <button class="zld-btn-send text-action" data-mode="text" title="Digitar Texto">
+                <span>💬 Enviar Texto</span>
+              </button>
+              <button class="zld-btn-send audio audio-action" data-mode="audio" title="Enviar Áudio Gravado">
+                <span>🎙️ Áudio</span>
+              </button>
+            </div>
           </div>
 
           <!-- Etapa 3A e 3B -->
           <div class="zld-grid-2">
-            <div class="zld-script-btn" data-action="msg3_presencial">
-              <div class="btn-top">
-                <div class="btn-top-left">
-                  <span class="step-num">3A</span>
-                  <span class="step-label">Presencial ZL</span>
-                </div>
-                <button class="zld-action-pill audio audio-action" data-mode="audio" title="Enviar Áudio">🎙️</button>
+            <div class="zld-card" data-action="msg3_presencial">
+              <div class="zld-card-top">
+                <span class="step-num">3A</span>
+                <span class="zld-card-title">Presencial ZL</span>
               </div>
-              <div class="btn-preview">Posto/ponto ZL</div>
+              <div class="zld-card-desc">Posto/ponto ZL</div>
+              <div class="zld-card-actions">
+                <button class="zld-btn-send text-action" data-mode="text" title="Enviar Texto">💬 Texto</button>
+                <button class="zld-btn-send audio audio-action" data-mode="audio" title="Enviar Áudio">🎙️</button>
+              </div>
             </div>
 
-            <div class="zld-script-btn" data-action="msg3_online">
-              <div class="btn-top">
-                <div class="btn-top-left">
-                  <span class="step-num">3B</span>
-                  <span class="step-label">Remoto PC</span>
-                </div>
-                <button class="zld-action-pill audio audio-action" data-mode="audio" title="Enviar Áudio">🎙️</button>
+            <div class="zld-card" data-action="msg3_online">
+              <div class="zld-card-top">
+                <span class="step-num">3B</span>
+                <span class="zld-card-title">Remoto PC</span>
               </div>
-              <div class="btn-preview">AnyDesk + USB</div>
+              <div class="zld-card-desc">AnyDesk + USB</div>
+              <div class="zld-card-actions">
+                <button class="zld-btn-send text-action" data-mode="text" title="Enviar Texto">💬 Texto</button>
+                <button class="zld-btn-send audio audio-action" data-mode="audio" title="Enviar Áudio">🎙️</button>
+              </div>
             </div>
           </div>
 
           <!-- Etapa 4 -->
-          <div class="zld-script-btn" data-action="msg4_usb">
-            <div class="btn-top">
-              <div class="btn-top-left">
-                <span class="step-num">4</span>
-                <span class="step-label">Ativar Depuração USB</span>
-              </div>
-              <div class="zld-dual-actions">
-                <button class="zld-action-pill text-action" data-mode="text" title="Digitar Texto">💬 Texto</button>
-                <button class="zld-action-pill audio audio-action" data-mode="audio" title="Enviar Áudio">🎙️ Áudio</button>
-              </div>
+          <div class="zld-card" data-action="msg4_usb">
+            <div class="zld-card-top">
+              <span class="step-num">4</span>
+              <span class="zld-card-title">Ativar Depuração USB</span>
             </div>
-            <div class="btn-preview">Passo a passo com 7 toques + autorização</div>
+            <div class="zld-card-desc">Passo a passo com 7 toques no compilação + autorização USB</div>
+            <div class="zld-card-actions">
+              <button class="zld-btn-send text-action" data-mode="text" title="Digitar Texto">
+                <span>💬 Enviar Texto</span>
+              </button>
+              <button class="zld-btn-send audio audio-action" data-mode="audio" title="Enviar Áudio">
+                <span>🎙️ Áudio</span>
+              </button>
+            </div>
           </div>
 
           <!-- Etapa 5 -->
-          <div class="zld-script-btn" data-action="msg5_teste">
-            <div class="btn-top">
-              <div class="btn-top-left">
-                <span class="step-num">5</span>
-                <span class="step-label">Teste Pós-Otimização</span>
-              </div>
-              <div class="zld-dual-actions">
-                <button class="zld-action-pill text-action" data-mode="text" title="Digitar Texto">💬 Texto</button>
-                <button class="zld-action-pill audio audio-action" data-mode="audio" title="Enviar Áudio">🎙️ Áudio</button>
-              </div>
+          <div class="zld-card" data-action="msg5_teste">
+            <div class="zld-card-top">
+              <span class="step-num">5</span>
+              <span class="step-label zld-card-title">Teste Pós-Otimização</span>
             </div>
-            <div class="btn-preview">Reiniciado + testar Uber/99/Maps</div>
+            <div class="zld-card-desc">Aparelho reiniciado + pedir teste de toque na Uber/99/Maps</div>
+            <div class="zld-card-actions">
+              <button class="zld-btn-send text-action" data-mode="text" title="Digitar Texto">
+                <span>💬 Enviar Texto</span>
+              </button>
+              <button class="zld-btn-send audio audio-action" data-mode="audio" title="Enviar Áudio">
+                <span>🎙️ Áudio</span>
+              </button>
+            </div>
           </div>
 
           <!-- Seção de Cobrança Pix -->
           <div class="zld-section-title">Cobrança Pix & QR Code</div>
 
-          <div class="zld-grid-2">
-            <!-- Pix R$ 50 -->
-            <div class="zld-script-btn pix-btn" data-action="msg6_pix_presencial">
-              <div class="btn-top">
-                <span style="font-weight: 700;">💰 Presencial R$ 50</span>
-              </div>
-              <div class="zld-pix-actions">
-                <button class="zld-pix-subbtn" data-pix-type="text" data-amount="50">💬 Texto</button>
-                <button class="zld-pix-subbtn" data-pix-type="qr" data-amount="50">📷 QR Code</button>
-              </div>
+          <!-- Pix 50 Presencial -->
+          <div class="zld-card pix-card" data-action="msg6_pix_presencial">
+            <div class="zld-card-top">
+              <span class="step-num pix">💰</span>
+              <span class="zld-card-title">Presencial Zona Leste (R$ 50,00)</span>
             </div>
+            <div class="zld-card-desc">Dados Pix em texto ou imagem do QR Code com o valor</div>
+            <div class="zld-card-actions">
+              <button class="zld-btn-send text-action zld-pix-subbtn" data-pix-type="text" data-amount="50">
+                <span>💬 Enviar Chave</span>
+              </button>
+              <button class="zld-btn-send qr audio-action zld-pix-subbtn" data-pix-type="qr" data-amount="50">
+                <span>📷 QR Code Oficial</span>
+              </button>
+            </div>
+          </div>
 
-            <!-- Pix R$ 30 -->
-            <div class="zld-script-btn pix-btn" data-action="msg6_pix_online">
-              <div class="btn-top">
-                <span style="font-weight: 700;">💰 Remoto R$ 30</span>
-              </div>
-              <div class="zld-pix-actions">
-                <button class="zld-pix-subbtn" data-pix-type="text" data-amount="30">💬 Texto</button>
-                <button class="zld-pix-subbtn" data-pix-type="qr" data-amount="30">📷 QR Code</button>
-              </div>
+          <!-- Pix 30 Remoto -->
+          <div class="zld-card pix-card" data-action="msg6_pix_online">
+            <div class="zld-card-top">
+              <span class="step-num pix">💰</span>
+              <span class="zld-card-title">Atendimento Remoto (R$ 30,00)</span>
+            </div>
+            <div class="zld-card-desc">Dados Pix em texto ou imagem do QR Code com o valor</div>
+            <div class="zld-card-actions">
+              <button class="zld-btn-send text-action zld-pix-subbtn" data-pix-type="text" data-amount="30">
+                <span>💬 Enviar Chave</span>
+              </button>
+              <button class="zld-btn-send qr audio-action zld-pix-subbtn" data-pix-type="qr" data-amount="30">
+                <span>📷 QR Code Oficial</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1448,7 +1468,7 @@
       const audioActionBtn = e.target.closest('.audio-action');
       if (audioActionBtn) {
         e.stopPropagation();
-        const card = audioActionBtn.closest('.zld-script-btn');
+        const card = audioActionBtn.closest('.zld-card, .zld-script-btn');
         const action = card ? card.getAttribute('data-action') : null;
         if (action) {
           sendAudioStep(action, card);
@@ -1460,7 +1480,7 @@
       const textActionBtn = e.target.closest('.text-action');
       if (textActionBtn) {
         e.stopPropagation();
-        const card = textActionBtn.closest('.zld-script-btn');
+        const card = textActionBtn.closest('.zld-card, .zld-script-btn');
         const action = card ? card.getAttribute('data-action') : null;
         if (action) {
           executeFlow(action, card);
@@ -1469,12 +1489,12 @@
       }
 
       // 4. Clique geral no card
-      const btn = e.target.closest('.zld-script-btn');
-      if (!btn) return;
+      const card = e.target.closest('.zld-card, .zld-script-btn');
+      if (!card) return;
 
-      const action = btn.getAttribute('data-action');
+      const action = card.getAttribute('data-action');
       if (action) {
-        executeFlow(action, btn);
+        executeFlow(action, card);
       }
     });
 
